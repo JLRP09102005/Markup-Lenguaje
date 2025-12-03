@@ -1,0 +1,45 @@
+body
+{
+    margin: 0;
+    padding: 0;
+}
+
+h1,h2,h3,h4,h5,h6
+{
+    font-family: "Black Ops One", system-ui;
+}
+
+.principal
+{
+    width: 100vw;
+    height: 100vh;
+    background-color: cornflowerblue;
+    background-image: url(/img/2b1e625e36851d42ff9798de296bb620.jpe);
+    background-size: cover;
+    position: relative;
+}
+
+.overlay
+{
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: rgb(194, 23, 23);
+    width: 100vw;
+    height: 100vh;
+    mix-blend-mode: saturation;
+}
+
+.samantha
+{
+    width: 100vw;
+    height: 50vh;
+    background-color: aquamarine;
+}
+
+h1
+{
+    font-size: 105px;
+    letter-spacing: -0.05em;
+    line-height: 1em;
+}
