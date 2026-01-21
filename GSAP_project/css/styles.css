@@ -2,7 +2,7 @@ body
 {
     margin: 0;
     padding: 0;
-    background-color: #000000;
+    background-color: #400d70;
     font-family: "Black Ops One", sans-serif;
 }
 
@@ -19,4 +19,20 @@ body
     mix-blend-mode: difference;
     position: relative;
     overflow: hidden;
+}
+
+.container_hero
+{
+    width: 75vw;
+}
+
+.hero_title
+{
+    font-size: 12rem;
+    color: rgb(173, 173, 173);
+    opacity: 1;
+    letter-spacing: -0.04em;
+    line-height: 0.8em;
+    text-shadow: 4px 2px 19px;
+    text-shadow: 0 0 5px #FFF, 0 0 10px #FFF, 0 0 15px #FFF, 0 0 20px #49ff18, 0 0 30px #49FF18, 0 0 40px #49FF18, 0 0 55px #49FF18, 0 0 75px #49ff18;
 }
