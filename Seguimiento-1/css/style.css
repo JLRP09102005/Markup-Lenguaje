@@ -9,6 +9,14 @@ h1,h2,h3,h4,h5,h6
     font-family: "Black Ops One", system-ui;
 }
 
+h1
+{
+    font-size: 105px;
+    letter-spacing: -0.05em;
+    line-height: 1em;
+    margin: 0;
+}
+
 .principal
 {
     width: 100vw;
@@ -17,6 +25,9 @@ h1,h2,h3,h4,h5,h6
     background-image: url(/img/2b1e625e36851d42ff9798de296bb620.jpe);
     background-size: cover;
     position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .overlay
@@ -35,11 +46,110 @@ h1,h2,h3,h4,h5,h6
     width: 100vw;
     height: 50vh;
     background-color: aquamarine;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-h1
+.gladys
 {
-    font-size: 105px;
-    letter-spacing: -0.05em;
-    line-height: 1em;
+    width: 100vw;
+    height: 50vh;
+    background-color: black;
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    color: white;
+    padding-left: 2em;
 }
+
+.josefina
+{
+    width: 100vw;
+    height: 50vh;
+    background-color: rgb(51, 0, 172);
+    display: flex;
+    align-items: center;
+    justify-content: end;
+    color: white;
+    padding-right: 2em;
+}
+
+.dynamic_background {background: radial-gradient(100% 100% at var(--4-x-position) var(--4-y-position), #aa3cdd 0%, transparent),radial-gradient(100% 100% at var(--5-x-position) var(--5-y-position), #006cfa 0%, transparent),#1b253b;animation-name: main; animation-iteration-count: infinite; animation-duration: 15s; transition-timing-function: ease-out;}@property --4-x-position {
+      syntax: '<percentage>';
+        inherits: false;
+        initial-value: 20%;
+      }@property --4-y-position {
+        syntax: '<percentage>';
+          inherits: false;
+          initial-value: 80%;
+        }@property --5-x-position {
+      syntax: '<percentage>';
+        inherits: false;
+        initial-value: 80%;
+      }@property --5-y-position {
+        syntax: '<percentage>';
+          inherits: false;
+          initial-value: 20%;
+        }:root {--4-x-position: 20%;--4-y-position: 80%;--5-x-position: 80%;--5-y-position: 20%;}
+    @keyframes main {
+      25% {--4-x-position: 15%;--4-y-position: 15%;--5-x-position: 85%;--5-y-position: 80%;}50% {--4-x-position: 80%;--4-y-position: 15%;--5-x-position: 15%;--5-y-position: 85%;}
+    }
+
+.paquita
+{
+    width: 100vw;
+    height: 50vh;
+    background-color: rgb(51, 0, 172);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    padding-right: 2em;
+}
+
+@keyframes paquitaGradient {
+  0%   { background-position: 0%   50%; }
+  100% { background-position: 100% 50%; }
+}
+
+
+.dynamic_background_2 {background: radial-gradient(100% 100% at var(--4-x-position) var(--4-y-position), #006cfa 0%, transparent),radial-gradient(100% 100% at var(--5-x-position) var(--5-y-position), #aa3cdd 0%, transparent),#aa3cdd;animation-name: main; animation-iteration-count: infinite; animation-duration: 15s; transition-timing-function: ease-out;}@property --4-x-position {
+      syntax: '<percentage>';
+        inherits: false;
+        initial-value: 20%;
+      }@property --4-y-position {
+        syntax: '<percentage>';
+          inherits: false;
+          initial-value: 80%;
+        }@property --5-x-position {
+      syntax: '<percentage>';
+        inherits: false;
+        initial-value: 80%;
+      }@property --5-y-position {
+        syntax: '<percentage>';
+          inherits: false;
+          initial-value: 20%;
+        }:root {--4-x-position: 20%;--4-y-position: 80%;--5-x-position: 80%;--5-y-position: 20%;}
+    @keyframes main {
+      25% {--4-x-position: 15%;--4-y-position: 15%;--5-x-position: 85%;--5-y-position: 80%;}50% {--4-x-position: 80%;--4-y-position: 15%;--5-x-position: 15%;--5-y-position: 85%;}
+    }
+
+@keyframes gradient-animation
+{
+    0% {
+        background-position: 0% 50%;
+    }
+    0% {
+        background-position: 100% 50%;
+    }
+    0% {
+        background-position: 0% 50%;
+    }
+}
+
+.gradient-background_2
+{
+    animation: gradient-animation 5s ease infinite;
+}
+

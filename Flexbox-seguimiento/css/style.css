@@ -1,0 +1,45 @@
+body
+{
+    margin: 0;
+    padding: 0;
+    background-color: blueviolet;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: bold;
+}
+
+.box
+{
+    width: 32vw;
+    height: 25px;
+    background-color: crimson;
+    color: azure;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    border-radius: 5px;
+}
+
+.container
+{
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.color1
+{
+    background-color: rgb(255, 234, 0);
+}
+
+.color2
+{
+    background-color: rgb(245, 20, 0);
+}
+
+.color3
+{
+    background-color: rgb(255, 234, 0);
+}
