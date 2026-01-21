@@ -1,0 +1,22 @@
+body
+{
+    margin: 0;
+    padding: 0;
+    background-color: #000000;
+    font-family: "Black Ops One", sans-serif;
+}
+
+.hero
+{
+    width: 100vw;
+    height: 100vh;
+    background-color: red;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-image: url(../img/miskatonic.life_the_attack_of_the_mutant_guinea_pigs_high_det_c2e86c23-28d5-40e6-b380-a7911f9fa43f_2.png);
+    background-size: cover;
+    mix-blend-mode: difference;
+    position: relative;
+    overflow: hidden;
+}
