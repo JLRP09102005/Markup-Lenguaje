@@ -32,6 +32,6 @@ gsap.fromTo(
 
 gsap.fromTo(
     ".stamp_3",
-    { x: 0, y: 120, opacity: 0 },
-    { x: 0, y: 0, opacity: 1, duration: 2.2, ease: "power1.out", delay: 2.5 }
+    { x: 0, y: 200, opacity: 0 },
+    { x: 0, y: 100, opacity: 1, duration: 2.2, ease: "power1.out", delay: 2.5 }
 );

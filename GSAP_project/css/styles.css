@@ -4,6 +4,7 @@ body
     padding: 0;
     background-color: #400d70;
     font-family: "Black Ops One", sans-serif;
+    overflow-x: hidden;
 }
 
 .hero
@@ -37,6 +38,21 @@ body
     text-shadow: 0 0 5px #FFF, 0 0 10px #FFF, 0 0 15px #FFF, 0 0 20px #49ff18, 0 0 30px #49FF18, 0 0 40px #49FF18, 0 0 55px #49FF18, 0 0 75px #49ff18;
 }
 
+.first
+{
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    background-color: #49FF18;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    min-width: 100vh;
+    z-index: 1;
+    background-image: url(../img/landscape.jpg);
+    background-size: cover;
+}
+
 .stamp_1
 {
     position: absolute;
@@ -58,4 +74,38 @@ body
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
+}
+
+.cloud
+{
+    position: absolute;
+    top: 25%;
+    width: clamp(180px, 25vw, 420px);
+    pointer-events: none;
+    z-index: 10;
+    left: -40%;
+    animation: cloud-move 40s linear infinite;
+}
+
+.cloud_1
+{
+    position: absolute;
+    top: 25%;
+    width: clamp(180px, 25vw, 420px);
+    pointer-events: none;
+    z-index: 10;
+    right: -40%;
+    animation: cloud-move_1 150s linear infinite;
+}
+
+@keyframes cloud-move
+{
+    from {transform: translateX(0);}
+    to {transform: translateX(160vw);}
+}
+
+@keyframes cloud-move_1
+{
+    from {transform: translateX(0);}
+    to {transform: translateX(-200vw) scale(5);}
 }
