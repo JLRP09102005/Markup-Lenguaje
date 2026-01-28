@@ -98,6 +98,17 @@ body
     animation: cloud-move_1 150s linear infinite;
 }
 
+.cloud_2
+{
+    position: absolute;
+    top: 25%;
+    width: clamp(180px, 25vw, 420px);
+    pointer-events: none;
+    z-index: 10;
+    right: -40%;
+    animation: cloud-move_2 150s linear infinite;
+}
+
 @keyframes cloud-move
 {
     from {transform: translateX(0);}
@@ -105,6 +116,12 @@ body
 }
 
 @keyframes cloud-move_1
+{
+    from {transform: translateX(0);}
+    to {transform: translateX(-200vw) scale(5);}
+}
+
+@keyframes cloud-move_2
 {
     from {transform: translateX(0);}
     to {transform: translateX(-200vw) scale(5);}
