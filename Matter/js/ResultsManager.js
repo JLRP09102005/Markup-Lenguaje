@@ -26,7 +26,10 @@ export class ResultsManager {
   show(score, duration) {
     if (!this.overlay.classList.contains("is-hidden")) return;
     const scores = this._loadScores();
-    scores.push({ score, duration, at: Date.now() });
+    const exists = scores.some(
+      (entry) => entry.score === score && entry.duration === duration
+    );
+    if (!exists) scores.push({ score, duration, at: Date.now() });
     scores.sort((a, b) => b.score - a.score);
     this._saveScores(scores);
     this.scoreEl.textContent = score;

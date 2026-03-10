@@ -17,6 +17,12 @@ export class GameConfig {
     this.survivalBalls = 8;
     this.survivalTarget = 600;
     this.survivalTargetStep = 300;
+    this.survivalBallStep = 0;
+    this.survivalBallMin = 3;
+    this.survivalScoreMultiplierStart = 1.0;
+    this.survivalScoreMultiplierStep = -0.05;
+    this.survivalScoreMultiplierMin = 0.7;
+    this.survivalScoreMultiplierMax = 1.5;
     this.timerDuration = 60;
   }
 }

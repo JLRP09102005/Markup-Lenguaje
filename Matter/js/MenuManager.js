@@ -181,4 +181,8 @@ export class MenuManager {
     this.menu.classList.remove("is-hidden");
     this.openTimer();
   }
+
+  hideMenu() {
+    this.menu.classList.add("is-hidden");
+  }
 }

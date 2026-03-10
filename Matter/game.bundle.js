@@ -207,7 +207,10 @@
     show(score, duration) {
       if (!this.overlay.classList.contains("is-hidden")) return;
       const scores = this._loadScores();
-      scores.push({ score, duration, at: Date.now() });
+      const exists = scores.some(
+        (entry) => entry.score === score && entry.duration === duration
+      );
+      if (!exists) scores.push({ score, duration, at: Date.now() });
       scores.sort((a, b) => b.score - a.score);
       this._saveScores(scores);
       this.scoreEl.textContent = score;
@@ -251,6 +254,68 @@
     _saveScores(scores) {
       try {
         localStorage.setItem("pachinko_timer_scores", JSON.stringify(scores));
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  class SurvivalResultsManager {
+    constructor(onReplay, onMenu) {
+      this.onReplay = onReplay;
+      this.onMenu = onMenu;
+      this.overlay = document.getElementById("survival-results");
+      this.listEl = document.getElementById("survival-leaderboard");
+      this.roundsEl = document.getElementById("survival-final");
+      this.replayBtn = document.getElementById("survival-replay");
+      this.menuBtn = document.getElementById("survival-menu");
+      this.clearBtn = document.getElementById("survival-clear");
+    }
+    init() {
+      this.replayBtn.addEventListener("click", () => {
+        this.hide();
+        this.onReplay();
+      });
+      this.menuBtn.addEventListener("click", () => {
+        this.hide();
+        this.onMenu();
+      });
+      this.clearBtn.addEventListener("click", () => {
+        this._saveScores([]);
+        this.listEl.innerHTML = "";
+      });
+    }
+    show(rounds) {
+      if (!this.overlay.classList.contains("is-hidden")) return;
+      const scores = this._loadScores();
+      const exists = scores.some((entry) => entry.rounds === rounds);
+      if (!exists) scores.push({ rounds, at: Date.now() });
+      scores.sort((a, b) => b.rounds - a.rounds);
+      this._saveScores(scores);
+      this.roundsEl.textContent = rounds;
+      this.listEl.innerHTML = "";
+      scores.slice(0, 10).forEach((entry, idx) => {
+        const row = document.createElement("div");
+        row.className = "leader-row";
+        row.textContent = `${idx + 1}. ${entry.rounds}`;
+        this.listEl.appendChild(row);
+      });
+      this.overlay.classList.remove("is-hidden");
+    }
+    hide() {
+      this.overlay.classList.add("is-hidden");
+    }
+    _loadScores() {
+      try {
+        const raw = localStorage.getItem("pachinko_survival_rounds");
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+    _saveScores(scores) {
+      try {
+        localStorage.setItem("pachinko_survival_rounds", JSON.stringify(scores));
       } catch {
         // ignore
       }
@@ -439,6 +504,9 @@
       this.menu.classList.remove("is-hidden");
       this.openTimer();
     }
+    hideMenu() {
+      this.menu.classList.add("is-hidden");
+    }
   }
 
   class GameConfig {
@@ -460,6 +528,12 @@
       this.survivalBalls = 8;
       this.survivalTarget = 600;
       this.survivalTargetStep = 300;
+      this.survivalBallStep = 0;
+      this.survivalBallMin = 3;
+      this.survivalScoreMultiplierStart = 1;
+      this.survivalScoreMultiplierStep = -0.05;
+      this.survivalScoreMultiplierMin = 0.7;
+      this.survivalScoreMultiplierMax = 1.5;
       this.timerDuration = 60;
     }
   }
@@ -729,6 +803,7 @@
       this._lastTick = 0;
       this._timerEnded = false;
       this.onTimerEnd = null;
+      this.onSurvivalEnd = null;
       this._bindEvents();
     }
     setMode(mode, options = {}) {
@@ -739,7 +814,7 @@
       this.timeLeft = this.timerDuration;
       this._timerEnded = false;
       if (mode === "survival") {
-        this.state.ballsLeft = this.config.survivalBalls;
+        this.state.ballsLeft = this._getSurvivalBalls();
         this.state.score = 0;
       } else if (mode === "timer") {
         this.state.ballsLeft = Infinity;
@@ -761,6 +836,7 @@
       if (!this._keyBound) {
         this._keyBound = true;
         window.addEventListener("keydown", (event) => {
+          if (this._isMenuOpen()) return;
           if (event.code === "Space") {
             event.preventDefault();
             this.dropBall();
@@ -772,6 +848,7 @@
       }
     }
     dropBall() {
+      if (this._isMenuOpen()) return;
       if (this.mode !== "timer" && !this.state.useBall()) return;
       if (this.mode === "timer" && this.timeLeft === 0) return;
       const margin = this.config.spawnMargin;
@@ -784,10 +861,16 @@
       this.ui.render(this._getMeta());
     }
     reset() {
+      if (this._isMenuOpen()) return;
       Composite.clear(this.engine.world, false);
       this.activeBalls.clear();
       this.state.reset();
       this._timerEnded = false;
+      if (this.mode === "survival") {
+        this.state.ballsLeft = this._getSurvivalBalls();
+      } else if (this.mode === "timer") {
+        this.state.ballsLeft = Infinity;
+      }
       this.board = new PachinkoBoard(this.engine, this.config, () => this._getThemeColors());
       this.board.build();
       this._spawnPowerUps();
@@ -810,6 +893,17 @@
         pop.remove();
       });
     }
+
+    _isMenuOpen() {
+      const menu = document.getElementById("menu");
+      const timerResults = document.getElementById("timer-results");
+      const survivalResults = document.getElementById("survival-results");
+      return (
+        (menu && !menu.classList.contains("is-hidden")) ||
+        (timerResults && !timerResults.classList.contains("is-hidden")) ||
+        (survivalResults && !survivalResults.classList.contains("is-hidden"))
+      );
+    }
     _duplicateBall(ball) {
       const now = this.engine.timing.timestamp;
       if (!ball.plugin) ball.plugin = {};
@@ -828,26 +922,29 @@
     _bindEvents() {
       Events.on(this.engine, "afterUpdate", () => {
         const ballsToRemove = [];
-        for (const ball of this.activeBalls) {
-          if (ball.position.y > this.config.height + 40) {
-            const slotIndex = this.scoreSystem.getSlotIndex(ball.position.x);
-            const points = this.scoreSystem.pointsForSlot(slotIndex);
-            this.state.addScore(points);
-            this.state.lastSlot = String(slotIndex + 1);
-            this._spawnScoreFx(slotIndex, points);
-            if (this.audio) {
-              const maxPoints = this.scoreSystem.pointsForSlot(this.config.slotCount - 1);
-              this.audio.playScore(points, maxPoints);
-            }
-            this._checkModeProgress();
-            ballsToRemove.push(ball);
+      for (const ball of this.activeBalls) {
+        if (ball.position.y > this.config.height + 40) {
+          const slotIndex = this.scoreSystem.getSlotIndex(ball.position.x);
+          const basePoints = this.scoreSystem.pointsForSlot(slotIndex);
+          const multiplier = this.mode === "survival" ? this._getSurvivalMultiplier() : 1;
+          const points = Math.round(basePoints * multiplier);
+          this.state.addScore(points);
+          this.state.lastSlot = String(slotIndex + 1);
+          this._spawnScoreFx(slotIndex, points);
+          if (this.audio) {
+            const maxBase = this.scoreSystem.pointsForSlot(this.config.slotCount - 1);
+            const maxPoints = Math.round(maxBase * multiplier);
+            this.audio.playScore(points, maxPoints);
           }
+          ballsToRemove.push(ball);
         }
-        if (ballsToRemove.length > 0) {
-          World.remove(this.engine.world, ballsToRemove);
-          ballsToRemove.forEach((ball) => this.activeBalls.delete(ball));
-          this.ui.render(this._getMeta());
-        }
+      }
+      if (ballsToRemove.length > 0) {
+        World.remove(this.engine.world, ballsToRemove);
+        ballsToRemove.forEach((ball) => this.activeBalls.delete(ball));
+        this._checkModeProgress();
+        this.ui.render(this._getMeta());
+      }
       });
 
       Events.on(this.engine, "collisionStart", (event) => {
@@ -912,20 +1009,37 @@
       if (this.state.score >= this.target) {
         this.round += 1;
         this.target += this.config.survivalTargetStep;
-        this.state.ballsLeft = this.config.survivalBalls;
+        this.state.ballsLeft = this._getSurvivalBalls();
         this.state.score = 0;
         this.reset();
-      } else if (this.state.ballsLeft === 0) {
+      } else if (this.state.ballsLeft === 0 && this.activeBalls.size === 0) {
         this._loseSurvival();
       }
     }
 
     _loseSurvival() {
+      const survived = Math.max(0, this.round - 1);
+      if (this.onSurvivalEnd) this.onSurvivalEnd(survived);
       this.round = 1;
       this.target = this.config.survivalTarget;
       this.state.score = 0;
-      this.state.ballsLeft = this.config.survivalBalls;
+      this.state.ballsLeft = this._getSurvivalBalls();
       this.reset();
+    }
+
+    _getSurvivalBalls() {
+      const count = this.config.survivalBalls + (this.round - 1) * this.config.survivalBallStep;
+      return Math.max(this.config.survivalBallMin, Math.round(count));
+    }
+
+    _getSurvivalMultiplier() {
+      const raw =
+        this.config.survivalScoreMultiplierStart +
+        (this.round - 1) * this.config.survivalScoreMultiplierStep;
+      return Math.min(
+        this.config.survivalScoreMultiplierMax,
+        Math.max(this.config.survivalScoreMultiplierMin, raw)
+      );
     }
 
     _endTimerMode() {
@@ -1010,7 +1124,19 @@
     () => menu.showMenu()
   );
   results.init();
+  const survivalResults = new SurvivalResultsManager(
+    async () => {
+      await audio.startMusic();
+      menu.hideMenu();
+      game.setMode("survival");
+      game.reset();
+      game.start();
+    },
+    () => menu.showMenu()
+  );
+  survivalResults.init();
   menu.init();
   game.onTimerEnd = (score, duration) => results.show(score, duration);
+  game.onSurvivalEnd = (rounds) => survivalResults.show(rounds);
   window.__pachinkoStarted = true;
 })();

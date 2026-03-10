@@ -2,6 +2,7 @@ import { Game } from "./Game.js";
 import { AudioManager } from "./AudioManager.js";
 import { MenuManager } from "./MenuManager.js";
 import { ResultsManager } from "./ResultsManager.js";
+import { SurvivalResultsManager } from "./SurvivalResultsManager.js";
 
 window.__pachinkoBooting = true;
 
@@ -27,6 +28,17 @@ resolveMatter().then((matter) => {
     () => menu.showMenu()
   );
   results.init();
+  const survivalResults = new SurvivalResultsManager(
+    async () => {
+      await audio.startMusic();
+      menu.hideMenu();
+      game.setMode("survival");
+      game.reset();
+      game.start();
+    },
+    () => menu.showMenu()
+  );
+  survivalResults.init();
   const menu = new MenuManager(
     audio,
     () => game.start(),
@@ -35,5 +47,6 @@ resolveMatter().then((matter) => {
   );
   menu.init();
   game.onTimerEnd = (score, duration) => results.show(score, duration);
+  game.onSurvivalEnd = (rounds) => survivalResults.show(rounds);
   window.__pachinkoStarted = true;
 });

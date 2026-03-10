@@ -50,6 +50,7 @@ export class Game {
     this.timerDuration = this.config.timerDuration;
     this._lastTick = 0;
     this._timerEnded = false;
+    this.onSurvivalEnd = null;
     this._bindEvents();
   }
   setMode(mode, options = {}) {
@@ -60,7 +61,7 @@ export class Game {
     this.timeLeft = this.timerDuration;
     this._timerEnded = false;
     if (mode === "survival") {
-      this.state.ballsLeft = this.config.survivalBalls;
+      this.state.ballsLeft = this._getSurvivalBalls();
       this.state.score = 0;
     } else if (mode === "timer") {
       this.state.ballsLeft = Infinity;
@@ -82,6 +83,7 @@ export class Game {
     if (!this._keyBound) {
       this._keyBound = true;
       window.addEventListener("keydown", (event) => {
+        if (this._isMenuOpen()) return;
         if (event.code === "Space") {
           event.preventDefault();
           this.dropBall();
@@ -93,6 +95,7 @@ export class Game {
     }
   }
   dropBall() {
+    if (this._isMenuOpen()) return;
     if (this.mode === "timer") {
       // infinite balls
     } else if (!this.state.useBall()) {
@@ -108,10 +111,16 @@ export class Game {
     this.ui.render(this._getMeta());
   }
   reset() {
+    if (this._isMenuOpen()) return;
     this.Matter.Composite.clear(this.engine.world, false);
     this.activeBalls.clear();
     this.state.reset();
     this._timerEnded = false;
+    if (this.mode === "survival") {
+      this.state.ballsLeft = this._getSurvivalBalls();
+    } else if (this.mode === "timer") {
+      this.state.ballsLeft = Infinity;
+    }
     this.board = new PachinkoBoard(this.Matter, this.engine, this.config, () =>
       this._getThemeColors()
     );
@@ -120,6 +129,17 @@ export class Game {
     this.applyTheme();
     this.slotLabels.render();
     this.ui.render(this._getMeta());
+  }
+
+  _isMenuOpen() {
+    const menu = document.getElementById("menu");
+    const timerResults = document.getElementById("timer-results");
+    const survivalResults = document.getElementById("survival-results");
+    return (
+      (menu && !menu.classList.contains("is-hidden")) ||
+      (timerResults && !timerResults.classList.contains("is-hidden")) ||
+      (survivalResults && !survivalResults.classList.contains("is-hidden"))
+    );
   }
   _spawnScoreFx(slotIndex, points) {
     const slotWidth = this.config.width / this.config.slotCount;
@@ -157,21 +177,24 @@ export class Game {
       for (const ball of this.activeBalls) {
         if (ball.position.y > this.config.height + 40) {
           const slotIndex = this.scoreSystem.getSlotIndex(ball.position.x);
-          const points = this.scoreSystem.pointsForSlot(slotIndex);
+          const basePoints = this.scoreSystem.pointsForSlot(slotIndex);
+          const multiplier = this.mode === "survival" ? this._getSurvivalMultiplier() : 1;
+          const points = Math.round(basePoints * multiplier);
           this.state.addScore(points);
           this.state.lastSlot = String(slotIndex + 1);
           this._spawnScoreFx(slotIndex, points);
           if (this.audio) {
-            const maxPoints = this.scoreSystem.pointsForSlot(this.config.slotCount - 1);
+            const maxBase = this.scoreSystem.pointsForSlot(this.config.slotCount - 1);
+            const maxPoints = Math.round(maxBase * multiplier);
             this.audio.playScore(points, maxPoints);
           }
-          this._checkModeProgress();
           ballsToRemove.push(ball);
         }
       }
       if (ballsToRemove.length > 0) {
         this.Matter.World.remove(this.engine.world, ballsToRemove);
         ballsToRemove.forEach((ball) => this.activeBalls.delete(ball));
+        this._checkModeProgress();
         this.ui.render(this._getMeta());
       }
     });
@@ -239,20 +262,37 @@ export class Game {
     if (this.state.score >= this.target) {
       this.round += 1;
       this.target += this.config.survivalTargetStep;
-      this.state.ballsLeft = this.config.survivalBalls;
+      this.state.ballsLeft = this._getSurvivalBalls();
       this.state.score = 0;
       this.reset();
-    } else if (this.state.ballsLeft === 0) {
+    } else if (this.state.ballsLeft === 0 && this.activeBalls.size === 0) {
       this._loseSurvival();
     }
   }
 
   _loseSurvival() {
+    const survived = Math.max(0, this.round - 1);
+    if (this.onSurvivalEnd) this.onSurvivalEnd(survived);
     this.round = 1;
     this.target = this.config.survivalTarget;
     this.state.score = 0;
-    this.state.ballsLeft = this.config.survivalBalls;
+    this.state.ballsLeft = this._getSurvivalBalls();
     this.reset();
+  }
+
+  _getSurvivalBalls() {
+    const count = this.config.survivalBalls + (this.round - 1) * this.config.survivalBallStep;
+    return Math.max(this.config.survivalBallMin, Math.round(count));
+  }
+
+  _getSurvivalMultiplier() {
+    const raw =
+      this.config.survivalScoreMultiplierStart +
+      (this.round - 1) * this.config.survivalScoreMultiplierStep;
+    return Math.min(
+      this.config.survivalScoreMultiplierMax,
+      Math.max(this.config.survivalScoreMultiplierMin, raw)
+    );
   }
 
   _endTimerMode() {
