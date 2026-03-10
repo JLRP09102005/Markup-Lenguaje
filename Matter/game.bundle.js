@@ -831,11 +831,10 @@
           background: "#0f1528",
         },
       });
-      this.runner = Runner.create({
-        isFixed: true,
-        delta: 1000 / 60,
-        frameDelta: 1000 / 60,
-      });
+      this.runner = Runner.create();
+      this.runner.isFixed = false;
+      this.runner.delta = 1000 / 60;
+      this.runner.maxFrameTime = 1000 / 30;
       this.engine.timing.timeScale = 1;
       this.board = new PachinkoBoard(this.engine, this.config, () => this._getThemeColors());
       this.ballFactory = new BallFactory(this.config, () => this._getThemeColors());

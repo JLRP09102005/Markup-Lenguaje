@@ -26,11 +26,10 @@ export class Game {
         background: "#0f1528",
       },
     });
-    this.runner = this.Matter.Runner.create({
-      isFixed: true,
-      delta: 1000 / 60,
-      frameDelta: 1000 / 60,
-    });
+    this.runner = this.Matter.Runner.create();
+    this.runner.isFixed = false;
+    this.runner.delta = 1000 / 60;
+    this.runner.maxFrameTime = 1000 / 30;
     this.engine.timing.timeScale = 1;
     this.board = new PachinkoBoard(this.Matter, this.engine, this.config, () =>
       this._getThemeColors()
