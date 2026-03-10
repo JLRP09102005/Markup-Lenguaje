@@ -287,6 +287,9 @@ button.secondary {
   visibility: hidden;
   pointer-events: none;
 }
+.is-hidden {
+  display: none !important;
+}
 .menu-card {
   width: min(420px, 90vw);
   background: rgba(8, 12, 24, 0.9);

@@ -19,6 +19,7 @@ export class MenuManager {
     this.menu.classList.remove("is-hidden");
     this.mainPanel.hidden = false;
     this.optionsPanel.hidden = true;
+    this.optionsPanel.classList.add("is-hidden");
     [this.playBtn, this.optionsBtn, this.exitBtn, this.backBtn].forEach((btn) => {
       if (!btn) return;
       btn.addEventListener("mouseenter", () => {
@@ -33,13 +34,11 @@ export class MenuManager {
     });
     this.optionsBtn.addEventListener("click", async () => {
       await this.audio.playClick();
-      this.mainPanel.hidden = true;
-      this.optionsPanel.hidden = false;
+      this.openOptions();
     });
     this.backBtn.addEventListener("click", async () => {
       await this.audio.playClick();
-      this.optionsPanel.hidden = true;
-      this.mainPanel.hidden = false;
+      this.openMain();
     });
     this.exitBtn.addEventListener("click", async () => {
       await this.audio.playClick();
@@ -65,5 +64,34 @@ export class MenuManager {
         document.body.classList.add("theme-emerald");
       }
     });
+
+    window.addEventListener("keydown", (event) => {
+      if (event.code !== "Escape") return;
+      event.preventDefault();
+      if (this.menu.classList.contains("is-hidden")) {
+        this.menu.classList.remove("is-hidden");
+        this.openOptions();
+        return;
+      }
+      if (!this.optionsPanel.hidden) {
+        this.menu.classList.add("is-hidden");
+        return;
+      }
+      this.menu.classList.add("is-hidden");
+    });
+  }
+
+  openOptions() {
+    this.mainPanel.hidden = true;
+    this.optionsPanel.hidden = false;
+    this.mainPanel.classList.add("is-hidden");
+    this.optionsPanel.classList.remove("is-hidden");
+  }
+
+  openMain() {
+    this.optionsPanel.hidden = true;
+    this.mainPanel.hidden = false;
+    this.optionsPanel.classList.add("is-hidden");
+    this.mainPanel.classList.remove("is-hidden");
   }
 }

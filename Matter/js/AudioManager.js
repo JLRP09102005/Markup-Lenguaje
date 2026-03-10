@@ -4,8 +4,13 @@ export class AudioManager {
     this.musicGain = null;
     this.sfxGain = null;
     this.musicNodes = null;
+    this.musicSource = null;
     this.musicVolume = 0.35;
     this.sfxVolume = 0.5;
+    this.sfxBuffers = new Map();
+    this.musicBuffer = null;
+    this.musicEl = null;
+    this.sfxEls = new Map();
   }
   async ensureContext() {
     if (this.ctx) return this.ctx;
@@ -29,6 +34,7 @@ export class AudioManager {
   setMusicVolume(value) {
     this.musicVolume = value;
     if (this.musicGain) this.musicGain.gain.value = value;
+    if (this.musicEl) this.musicEl.volume = value;
   }
   setSfxVolume(value) {
     this.sfxVolume = value;
@@ -36,38 +42,29 @@ export class AudioManager {
   }
   async startMusic() {
     await this.resume();
-    if (!this.ctx || this.musicNodes) return;
-    const osc1 = this.ctx.createOscillator();
-    const osc2 = this.ctx.createOscillator();
-    const lfo = this.ctx.createOscillator();
-    const lfoGain = this.ctx.createGain();
-
-    osc1.type = "sine";
-    osc2.type = "triangle";
-    osc1.frequency.value = 110;
-    osc2.frequency.value = 220;
-    lfo.type = "sine";
-    lfo.frequency.value = 0.2;
-    lfoGain.gain.value = 12;
-
-    lfo.connect(lfoGain);
-    lfoGain.connect(osc2.frequency);
-
-    osc1.connect(this.musicGain);
-    osc2.connect(this.musicGain);
-
-    osc1.start();
-    osc2.start();
-    lfo.start();
-
-    this.musicNodes = { osc1, osc2, lfo, lfoGain };
+    if (this.musicSource || this.musicEl) return;
+    const buffer = await this._loadMusic();
+    if (buffer && this.ctx) {
+      const source = this.ctx.createBufferSource();
+      source.buffer = buffer;
+      source.loop = true;
+      source.connect(this.musicGain);
+      source.start();
+      this.musicSource = source;
+      return;
+    }
+    this._startMusicHtml();
   }
   stopMusic() {
-    if (!this.musicNodes) return;
-    this.musicNodes.osc1.stop();
-    this.musicNodes.osc2.stop();
-    this.musicNodes.lfo.stop();
-    this.musicNodes = null;
+    if (this.musicSource) {
+      this.musicSource.stop();
+      this.musicSource = null;
+    }
+    if (this.musicEl) {
+      this.musicEl.pause();
+      this.musicEl.currentTime = 0;
+      this.musicEl = null;
+    }
   }
   async playClick() {
     await this.resume();
@@ -79,13 +76,20 @@ export class AudioManager {
     if (!this.ctx) return;
     this._beep(320, 0.06);
   }
-  async playBounce(intensity = 0.5) {
+  async playBounce() {
+    const playedHtml = this._playSampleHtml("ball-bounce");
+    if (playedHtml) return;
+    const played = await this._playSample("ball-bounce");
+    if (played) return;
     await this.resume();
     if (!this.ctx) return;
-    const freq = 240 + Math.floor(intensity * 260);
-    this._beep(freq, 0.03 + intensity * 0.04);
+    this._beep(320, 0.04, 0, 1.35);
   }
   async playPowerUp() {
+    const playedHtml = this._playSampleHtml("double-ball-power");
+    if (playedHtml) return;
+    const played = await this._playSample("double-ball-power");
+    if (played) return;
     await this.resume();
     if (!this.ctx) return;
     this._beep(780, 0.09);
@@ -98,12 +102,66 @@ export class AudioManager {
     this._beep(420 + ratio * 420, 0.08 + ratio * 0.08);
     if (ratio > 0.7) this._beep(980, 0.09, 0.03);
   }
-  _beep(freq, duration, delay = 0) {
+  async _playSample(key) {
+    await this.resume();
+    const buffer = await this._loadSample(key);
+    if (buffer && this.ctx) {
+      const source = this.ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(this.sfxGain);
+      source.start();
+      return true;
+    }
+    return this._playSampleHtml(key);
+  }
+  async _loadSample(key) {
+    if (this.sfxBuffers.has(key)) return this.sfxBuffers.get(key);
+    const url = `sounds/${key}.mp3`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const arrayBuffer = await res.arrayBuffer();
+      const buffer = await this.ctx.decodeAudioData(arrayBuffer);
+      this.sfxBuffers.set(key, buffer);
+      return buffer;
+    } catch {
+      return null;
+    }
+  }
+  async _loadMusic() {
+    if (this.musicBuffer) return this.musicBuffer;
+    const url = "sounds/background-music.mp3";
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const arrayBuffer = await res.arrayBuffer();
+      const buffer = await this.ctx.decodeAudioData(arrayBuffer);
+      this.musicBuffer = buffer;
+      return buffer;
+    } catch {
+      return null;
+    }
+  }
+  _startMusicHtml() {
+    const audio = new Audio("sounds/background-music.mp3");
+    audio.loop = true;
+    audio.volume = this.musicVolume;
+    audio.play().catch(() => {});
+    this.musicEl = audio;
+  }
+  _playSampleHtml(key) {
+    const url = `sounds/${key}.mp3`;
+    const audio = new Audio(url);
+    audio.volume = key === "ball-bounce" ? Math.min(this.sfxVolume * 1.35, 1) : this.sfxVolume;
+    audio.play().catch(() => {});
+    return true;
+  }
+  _beep(freq, duration, delay = 0, gainBoost = 1) {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = "square";
     osc.frequency.value = freq;
-    gain.gain.value = this.sfxVolume;
+    gain.gain.value = Math.min(this.sfxVolume * gainBoost, 1);
     osc.connect(gain);
     gain.connect(this.sfxGain);
     const now = this.ctx.currentTime + delay;
