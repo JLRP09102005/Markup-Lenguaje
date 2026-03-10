@@ -330,6 +330,7 @@
       this.onModeSelect = onModeSelect;
       this.menu = document.getElementById("menu");
       this.mainPanel = document.getElementById("menu-main");
+      this.pausePanel = document.getElementById("menu-pause");
       this.optionsPanel = document.getElementById("menu-options");
       this.modesPanel = document.getElementById("menu-modes");
       this.timerPanel = document.getElementById("menu-timer");
@@ -343,6 +344,9 @@
       this.timerSeconds = document.getElementById("timer-seconds");
       this.timerStartBtn = document.getElementById("timer-start");
       this.timerBackBtn = document.getElementById("timer-back");
+      this.pauseOptionsBtn = document.getElementById("pause-options");
+      this.pauseMainBtn = document.getElementById("pause-main");
+      this.pauseModesBtn = document.getElementById("pause-modes");
       this.musicRange = document.getElementById("opt-music");
       this.sfxRange = document.getElementById("opt-sfx");
       this.toggleGlow = document.getElementById("opt-glow");
@@ -350,8 +354,11 @@
       this.themeSelect = document.getElementById("opt-theme");
     }
     init() {
+      this._pauseOpen = false;
       this.menu.classList.remove("is-hidden");
       this.mainPanel.hidden = false;
+      this.pausePanel.hidden = true;
+      this.pausePanel.classList.add("is-hidden");
       this.optionsPanel.hidden = true;
       this.optionsPanel.classList.add("is-hidden");
       this.modesPanel.hidden = true;
@@ -372,8 +379,23 @@
         await this.audio.playClick();
         this.openOptions();
       });
+      this.pauseOptionsBtn.addEventListener("click", async () => {
+        await this.audio.playClick();
+        this.openOptions();
+      });
+      this.pauseMainBtn.addEventListener("click", async () => {
+        await this.audio.playClick();
+        this._pauseOpen = false;
+        this.openMain();
+      });
+      this.pauseModesBtn.addEventListener("click", async () => {
+        await this.audio.playClick();
+        this._pauseOpen = false;
+        this.openModes();
+      });
       this.backBtn.addEventListener("click", async () => {
         await this.audio.playClick();
+        if (this._pauseOpen) return this.openPause();
         this.openMain();
       });
       this.modeBackBtn.addEventListener("click", async () => {
@@ -441,21 +463,26 @@
         event.preventDefault();
         if (this.menu.classList.contains("is-hidden")) {
           this.menu.classList.remove("is-hidden");
-          this.openOptions();
+          this._pauseOpen = true;
+          this.openPause();
           return;
         }
-        if (!this.optionsPanel.hidden) {
+        if (this._pauseOpen) {
           this.menu.classList.add("is-hidden");
+          this._pauseOpen = false;
           return;
         }
         this.menu.classList.add("is-hidden");
+        this._pauseOpen = false;
       });
     }
 
     openOptions() {
       this.mainPanel.hidden = true;
+      this.pausePanel.hidden = true;
       this.optionsPanel.hidden = false;
       this.mainPanel.classList.add("is-hidden");
+      this.pausePanel.classList.add("is-hidden");
       this.optionsPanel.classList.remove("is-hidden");
       this.modesPanel.hidden = true;
       this.modesPanel.classList.add("is-hidden");
@@ -465,8 +492,10 @@
 
     openMain() {
       this.optionsPanel.hidden = true;
+      this.pausePanel.hidden = true;
       this.mainPanel.hidden = false;
       this.optionsPanel.classList.add("is-hidden");
+      this.pausePanel.classList.add("is-hidden");
       this.mainPanel.classList.remove("is-hidden");
       this.modesPanel.hidden = true;
       this.modesPanel.classList.add("is-hidden");
@@ -474,10 +503,25 @@
       this.timerPanel.classList.add("is-hidden");
     }
 
+    openPause() {
+      this.mainPanel.hidden = true;
+      this.optionsPanel.hidden = true;
+      this.modesPanel.hidden = true;
+      this.timerPanel.hidden = true;
+      this.pausePanel.hidden = false;
+      this.mainPanel.classList.add("is-hidden");
+      this.optionsPanel.classList.add("is-hidden");
+      this.modesPanel.classList.add("is-hidden");
+      this.timerPanel.classList.add("is-hidden");
+      this.pausePanel.classList.remove("is-hidden");
+    }
+
     openModes() {
       this.mainPanel.hidden = true;
+      this.pausePanel.hidden = true;
       this.modesPanel.hidden = false;
       this.mainPanel.classList.add("is-hidden");
+      this.pausePanel.classList.add("is-hidden");
       this.modesPanel.classList.remove("is-hidden");
       this.optionsPanel.hidden = true;
       this.optionsPanel.classList.add("is-hidden");
@@ -492,20 +536,25 @@
       this.timerPanel.classList.remove("is-hidden");
       this.mainPanel.hidden = true;
       this.mainPanel.classList.add("is-hidden");
+      this.pausePanel.hidden = true;
+      this.pausePanel.classList.add("is-hidden");
       this.optionsPanel.hidden = true;
       this.optionsPanel.classList.add("is-hidden");
     }
 
     showMenu() {
       this.menu.classList.remove("is-hidden");
+      this._pauseOpen = false;
       this.openMain();
     }
     showTimer() {
       this.menu.classList.remove("is-hidden");
+      this._pauseOpen = false;
       this.openTimer();
     }
     hideMenu() {
       this.menu.classList.add("is-hidden");
+      this._pauseOpen = false;
     }
   }
 
@@ -782,7 +831,12 @@
           background: "#0f1528",
         },
       });
-      this.runner = Runner.create();
+      this.runner = Runner.create({
+        isFixed: true,
+        delta: 1000 / 60,
+        frameDelta: 1000 / 60,
+      });
+      this.engine.timing.timeScale = 1;
       this.board = new PachinkoBoard(this.engine, this.config, () => this._getThemeColors());
       this.ballFactory = new BallFactory(this.config, () => this._getThemeColors());
       this.scoreSystem = new ScoreSystem(this.config, this.state);
