@@ -1,0 +1,274 @@
+:root {
+  --bg: #0b0e1a;
+  --ink: #e6f0ff;
+  --accent: #00f0ff;
+  --accent-2: #ff4bd8;
+  --board: #101527;
+  --panel: rgba(16, 21, 39, 0.88);
+  --panel-border: rgba(0, 240, 255, 0.25);
+  --soft: rgba(255, 255, 255, 0.06);
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  height: 100%;
+  margin: 0;
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: radial-gradient(circle at 20% 20%, #18224a 0%, #0b0e1a 55%, #070911 100%);
+}
+.layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) 1fr;
+  min-height: 100vh;
+}
+.panel {
+  background: var(--panel);
+  border-right: 1px solid var(--panel-border);
+  box-shadow: 0 0 40px rgba(0, 240, 255, 0.12);
+  backdrop-filter: blur(6px);
+  padding: 24px;
+}
+.panel h1 {
+  margin: 0 0 8px;
+  font-family: "Orbitron", "Space Grotesk", sans-serif;
+  font-size: 26px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.panel p {
+  margin: 0 0 16px;
+  line-height: 1.4;
+  color: rgba(230, 240, 255, 0.72);
+}
+.panel,
+#game {
+  animation: rise 700ms ease-out both;
+}
+.stats {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.stats .stat {
+  animation: fadeIn 500ms ease-out both;
+}
+.stats .stat:nth-child(1) {
+  animation-delay: 80ms;
+}
+.stats .stat:nth-child(2) {
+  animation-delay: 160ms;
+}
+.stats .stat:nth-child(3) {
+  animation-delay: 240ms;
+}
+.stat {
+  padding: 10px 12px;
+  background: var(--soft);
+  border: 1px solid rgba(0, 240, 255, 0.15);
+  font-size: 14px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+.controls {
+  margin-top: 18px;
+  display: grid;
+  gap: 8px;
+}
+button {
+  appearance: none;
+  border: 1px solid rgba(0, 240, 255, 0.6);
+  background: linear-gradient(130deg, rgba(0, 240, 255, 0.35), rgba(255, 75, 216, 0.35));
+  color: var(--ink);
+  font-size: 14px;
+  padding: 10px 12px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 24px rgba(255, 75, 216, 0.35);
+}
+button.secondary {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(230, 240, 255, 0.8);
+}
+.canvas-wrap {
+  display: grid;
+  place-items: center;
+  padding: 24px 12px 24px 24px;
+  background: radial-gradient(circle at 70% 10%, rgba(0, 240, 255, 0.08), transparent 55%);
+  position: relative;
+}
+#game {
+  width: min(100%, 720px);
+  height: auto;
+  max-width: 720px;
+  aspect-ratio: 3 / 4;
+  background: var(--board);
+  border: 2px solid rgba(0, 240, 255, 0.45);
+  border-radius: 12px;
+  box-shadow: 0 0 60px rgba(0, 240, 255, 0.2), inset 0 0 30px rgba(255, 75, 216, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+#game canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.slot-labels {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  pointer-events: none;
+  z-index: 2;
+}
+.slot-label {
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: rgba(230, 240, 255, 0.85);
+  padding: 4px 2px;
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(8, 12, 24, 0.6);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+}
+.score-fx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+.score-pop {
+  position: absolute;
+  transform: translate(-50%, 0);
+  font-family: "Orbitron", "Space Grotesk", sans-serif;
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: var(--accent);
+  text-shadow: 0 0 12px rgba(0, 240, 255, 0.8);
+  animation: pop 800ms ease-out forwards;
+}
+.score-pop.strong {
+  font-size: 18px;
+  color: var(--accent-2);
+  text-shadow: 0 0 18px rgba(255, 75, 216, 0.9);
+  animation: pop-strong 900ms ease-out forwards;
+}
+.hud {
+  position: absolute;
+  top: 24px;
+  right: 36px;
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  background: rgba(8, 12, 24, 0.85);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
+  backdrop-filter: blur(6px);
+  min-width: 160px;
+  pointer-events: none;
+  animation: float 3.6s ease-in-out infinite;
+}
+.hud-title {
+  font-family: "Orbitron", "Space Grotesk", sans-serif;
+  font-size: 12px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: rgba(0, 240, 255, 0.8);
+}
+.hud-line {
+  font-size: 13px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: rgba(230, 240, 255, 0.8);
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+@keyframes pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 10px) scale(0.8);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(-50%, -8px) scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -30px) scale(0.9);
+  }
+}
+@keyframes pop-strong {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 12px) scale(0.8);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(-50%, -12px) scale(1.25);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -40px) scale(1);
+  }
+}
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .panel {
+    border-right: none;
+    border-bottom: 1px solid var(--panel-border);
+  }
+  .hud {
+    right: 18px;
+    top: 16px;
+  }
+  .slot-labels {
+    left: 10px;
+    right: 10px;
+    bottom: 12px;
+  }
+}

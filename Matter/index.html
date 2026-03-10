@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pachinko Matter.js</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Space+Grotesk:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="panel">
+        <h1>Pachinko</h1>
+        <p>Juego base en Matter.js preparado para menus, habilidades y objetos extra.</p>
+        <div class="stats">
+          <div class="stat">Puntos: <span id="score">0</span></div>
+          <div class="stat">Bolas: <span id="balls">5</span></div>
+          <div class="stat">Ultima ranura: <span id="last-slot">-</span></div>
+        </div>
+        <div class="controls">
+          <button id="drop">Soltar bola</button>
+          <button id="reset" class="secondary">Reiniciar</button>
+        </div>
+      </aside>
+      <main class="canvas-wrap">
+        <div id="game">
+          <div class="slot-labels" id="slot-labels"></div>
+          <div class="score-fx" id="score-fx"></div>
+        </div>
+        <div class="hud" aria-hidden="true">
+          <div class="hud-title">Estado</div>
+          <div class="hud-line">Puntos: <span id="hud-score">0</span></div>
+          <div class="hud-line">Bolas: <span id="hud-balls">5</span></div>
+          <div class="hud-line">Ultima: <span id="hud-last">-</span></div>
+        </div>
+      </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
