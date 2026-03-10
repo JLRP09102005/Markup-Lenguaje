@@ -12,5 +12,7 @@ export class GameConfig {
     this.slotHeight = 80;
     this.spawnMargin = 40;
     this.powerUpRadius = 14;
+    this.powerUpMin = 3;
+    this.powerUpMax = 5;
   }
 }

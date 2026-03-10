@@ -14,7 +14,8 @@ export class PowerUp {
     const minX = radius + 30;
     const maxX = this.config.width - radius - 30;
     const minY = 170;
-    const maxY = this.config.height / 2;
+    const lastPinY = 140 + (this.config.pinRows - 1) * 70;
+    const maxY = Math.max(minY + 20, lastPinY - 40);
     const x = minX + Math.random() * (maxX - minX);
     const y = minY + Math.random() * (maxY - minY);
     this.body = Bodies.circle(x, y, radius, {

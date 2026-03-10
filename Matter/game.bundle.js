@@ -298,6 +298,8 @@
       this.slotHeight = 80;
       this.spawnMargin = 40;
       this.powerUpRadius = 14;
+      this.powerUpMin = 3;
+      this.powerUpMax = 5;
     }
   }
 
@@ -483,7 +485,8 @@
       const minX = radius + 30;
       const maxX = this.config.width - radius - 30;
       const minY = 170;
-      const maxY = this.config.height / 2;
+      const lastPinY = 140 + (this.config.pinRows - 1) * 70;
+      const maxY = Math.max(minY + 20, lastPinY - 40);
       const x = minX + Math.random() * (maxX - minX);
       const y = minY + Math.random() * (maxY - minY);
       const colors = this.getColors ? this.getColors() : {};
@@ -536,7 +539,7 @@
         this.scoreSystem
       );
       this.scoreFx = document.getElementById("score-fx");
-      this.powerUp = new PowerUp(this.engine, this.config, () => this._getThemeColors());
+      this.powerUps = [];
       this.activeBalls = new Set();
       this._bindEvents();
     }
@@ -544,7 +547,7 @@
       if (this._started) return;
       this._started = true;
       this.board.build();
-      this.powerUp.create();
+      this._spawnPowerUps();
       this.applyTheme();
       Render.run(this.render);
       Runner.run(this.runner, this.engine);
@@ -581,8 +584,7 @@
       this.state.reset();
       this.board = new PachinkoBoard(this.engine, this.config, () => this._getThemeColors());
       this.board.build();
-      this.powerUp = new PowerUp(this.engine, this.config, () => this._getThemeColors());
-      this.powerUp.create();
+      this._spawnPowerUps();
       this.applyTheme();
       this.slotLabels.render();
       this.ui.render();
@@ -649,10 +651,10 @@
           const isPowerUpB = b.label === "powerup";
           if (isPowerUpA && this.activeBalls.has(b)) {
             this._duplicateBall(b);
-            this.powerUp.collect();
+            this._collectPowerUp(a);
           } else if (isPowerUpB && this.activeBalls.has(a)) {
             this._duplicateBall(a);
-            this.powerUp.collect();
+            this._collectPowerUp(b);
           }
           const ball = this.activeBalls.has(a) ? a : this.activeBalls.has(b) ? b : null;
           if (ball && this.audio) {
@@ -693,10 +695,28 @@
       this.activeBalls.forEach((ball) => {
         ball.render.fillStyle = colors.ball;
       });
-      if (this.powerUp.body) {
-        this.powerUp.body.render.fillStyle = colors.powerup;
-        this.powerUp.body.render.strokeStyle = colors.powerupStroke;
+      this.powerUps.forEach((powerUp) => {
+        if (!powerUp.body) return;
+        powerUp.body.render.fillStyle = colors.powerup;
+        powerUp.body.render.strokeStyle = colors.powerupStroke;
+      });
+    }
+
+    _spawnPowerUps() {
+      this.powerUps = [];
+      const total =
+        this.config.powerUpMin +
+        Math.floor(Math.random() * (this.config.powerUpMax - this.config.powerUpMin + 1));
+      for (let i = 0; i < total; i += 1) {
+        const powerUp = new PowerUp(this.engine, this.config, () => this._getThemeColors());
+        powerUp.create();
+        this.powerUps.push(powerUp);
       }
+    }
+
+    _collectPowerUp(body) {
+      const target = this.powerUps.find((p) => p.body === body);
+      if (target) target.collect();
     }
   }
 

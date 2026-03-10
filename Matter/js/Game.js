@@ -41,9 +41,7 @@ export class Game {
       this.scoreSystem
     );
     this.scoreFx = document.getElementById("score-fx");
-    this.powerUp = new PowerUp(this.Matter, this.engine, this.config, () =>
-      this._getThemeColors()
-    );
+    this.powerUps = [];
     this.activeBalls = new Set();
     this._bindEvents();
   }
@@ -51,7 +49,7 @@ export class Game {
     if (this._started) return;
     this._started = true;
     this.board.build();
-    this.powerUp.create();
+    this._spawnPowerUps();
     this.applyTheme();
     this.Matter.Render.run(this.render);
     this.Matter.Runner.run(this.runner, this.engine);
@@ -90,10 +88,7 @@ export class Game {
       this._getThemeColors()
     );
     this.board.build();
-    this.powerUp = new PowerUp(this.Matter, this.engine, this.config, () =>
-      this._getThemeColors()
-    );
-    this.powerUp.create();
+    this._spawnPowerUps();
     this.applyTheme();
     this.slotLabels.render();
     this.ui.render();
@@ -158,13 +153,13 @@ export class Game {
         const b = pair.bodyB;
         const isPowerUpA = a.label === "powerup";
         const isPowerUpB = b.label === "powerup";
-        if (isPowerUpA && this.activeBalls.has(b)) {
-          this._duplicateBall(b);
-          this.powerUp.collect();
-        } else if (isPowerUpB && this.activeBalls.has(a)) {
-          this._duplicateBall(a);
-          this.powerUp.collect();
-        }
+          if (isPowerUpA && this.activeBalls.has(b)) {
+            this._duplicateBall(b);
+            this._collectPowerUp(a);
+          } else if (isPowerUpB && this.activeBalls.has(a)) {
+            this._duplicateBall(a);
+            this._collectPowerUp(b);
+          }
         const ball = this.activeBalls.has(a) ? a : this.activeBalls.has(b) ? b : null;
         if (ball && this.audio) {
           const now = this.engine.timing.timestamp;
@@ -205,9 +200,29 @@ export class Game {
     this.activeBalls.forEach((ball) => {
       ball.render.fillStyle = colors.ball;
     });
-    if (this.powerUp.body) {
-      this.powerUp.body.render.fillStyle = colors.powerup;
-      this.powerUp.body.render.strokeStyle = colors.powerupStroke;
+    this.powerUps.forEach((powerUp) => {
+      if (!powerUp.body) return;
+      powerUp.body.render.fillStyle = colors.powerup;
+      powerUp.body.render.strokeStyle = colors.powerupStroke;
+    });
+  }
+
+  _spawnPowerUps() {
+    this.powerUps = [];
+    const total =
+      this.config.powerUpMin +
+      Math.floor(Math.random() * (this.config.powerUpMax - this.config.powerUpMin + 1));
+    for (let i = 0; i < total; i += 1) {
+      const powerUp = new PowerUp(this.Matter, this.engine, this.config, () =>
+        this._getThemeColors()
+      );
+      powerUp.create();
+      this.powerUps.push(powerUp);
     }
+  }
+
+  _collectPowerUp(body) {
+    const target = this.powerUps.find((p) => p.body === body);
+    if (target) target.collect();
   }
 }
