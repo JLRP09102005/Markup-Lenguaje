@@ -557,6 +557,9 @@
           if (event.code === "Space") {
             event.preventDefault();
             this.dropBall();
+          } else if (event.code === "KeyR") {
+            event.preventDefault();
+            this.reset();
           }
         });
       }

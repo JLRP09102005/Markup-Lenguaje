@@ -58,15 +58,18 @@ export class Game {
     this.ui.bind(() => this.dropBall(), () => this.reset());
     this.slotLabels.render();
     this.ui.render();
-    if (!this._keyBound) {
-      this._keyBound = true;
-      window.addEventListener("keydown", (event) => {
-        if (event.code === "Space") {
-          event.preventDefault();
-          this.dropBall();
-        }
-      });
-    }
+      if (!this._keyBound) {
+        this._keyBound = true;
+        window.addEventListener("keydown", (event) => {
+          if (event.code === "Space") {
+            event.preventDefault();
+            this.dropBall();
+          } else if (event.code === "KeyR") {
+            event.preventDefault();
+            this.reset();
+          }
+        });
+      }
   }
   dropBall() {
     if (!this.state.useBall()) return;
