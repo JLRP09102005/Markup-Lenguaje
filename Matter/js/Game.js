@@ -100,8 +100,7 @@ export class Game {
     this.Matter.World.add(this.engine.world, clone);
   }
   _bindEvents() {
-    this.Matter.Events.on(this.engine, "afterUpdate", (event) => {
-      this.powerUp.update(event.delta || 16.7);
+    this.Matter.Events.on(this.engine, "afterUpdate", () => {
       const ballsToRemove = [];
       for (const ball of this.activeBalls) {
         if (ball.position.y > this.config.height + 40) {
@@ -128,8 +127,10 @@ export class Game {
         const isPowerUpB = b.label === "powerup";
         if (isPowerUpA && this.activeBalls.has(b)) {
           this._duplicateBall(b);
+          this.powerUp.collect();
         } else if (isPowerUpB && this.activeBalls.has(a)) {
           this._duplicateBall(a);
+          this.powerUp.collect();
         }
       }
     });
