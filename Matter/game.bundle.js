@@ -179,18 +179,105 @@
     }
   }
 
+  class ResultsManager {
+    constructor(onReplay, onMenu) {
+      this.onReplay = onReplay;
+      this.onMenu = onMenu;
+      this.overlay = document.getElementById("timer-results");
+      this.listEl = document.getElementById("leaderboard");
+      this.scoreEl = document.getElementById("final-score");
+      this.replayBtn = document.getElementById("results-replay");
+      this.menuBtn = document.getElementById("results-menu");
+      this.clearBtn = document.getElementById("results-clear");
+    }
+    init() {
+      this.replayBtn.addEventListener("click", () => {
+        this.hide();
+        this.onReplay();
+      });
+      this.menuBtn.addEventListener("click", () => {
+        this.hide();
+        this.onMenu();
+      });
+      this.clearBtn.addEventListener("click", () => {
+        this._saveScores([]);
+        this.listEl.innerHTML = "";
+      });
+    }
+    show(score, duration) {
+      if (!this.overlay.classList.contains("is-hidden")) return;
+      const scores = this._loadScores();
+      scores.push({ score, duration, at: Date.now() });
+      scores.sort((a, b) => b.score - a.score);
+      this._saveScores(scores);
+      this.scoreEl.textContent = score;
+      this.listEl.innerHTML = "";
+      const grouped = new Map();
+      scores.forEach((entry) => {
+        const key = Number.isFinite(entry.duration) ? `${entry.duration}s` : "Sin tiempo";
+        if (!grouped.has(key)) grouped.set(key, []);
+        grouped.get(key).push(entry);
+      });
+      Array.from(grouped.keys())
+        .sort((a, b) => parseInt(b, 10) - parseInt(a, 10))
+        .forEach((key) => {
+          const title = document.createElement("div");
+          title.className = "leader-title";
+          title.textContent = `Tiempo: ${key}`;
+          this.listEl.appendChild(title);
+          grouped
+            .get(key)
+            .slice(0, 10)
+            .forEach((entry, idx) => {
+              const row = document.createElement("div");
+              row.className = "leader-row";
+              row.textContent = `${idx + 1}. ${entry.score}`;
+              this.listEl.appendChild(row);
+            });
+        });
+      this.overlay.classList.remove("is-hidden");
+    }
+    hide() {
+      this.overlay.classList.add("is-hidden");
+    }
+    _loadScores() {
+      try {
+        const raw = localStorage.getItem("pachinko_timer_scores");
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+    _saveScores(scores) {
+      try {
+        localStorage.setItem("pachinko_timer_scores", JSON.stringify(scores));
+      } catch {
+        // ignore
+      }
+    }
+  }
+
   class MenuManager {
-    constructor(audio, onPlay, onThemeChange) {
+    constructor(audio, onPlay, onThemeChange, onModeSelect) {
       this.audio = audio;
       this.onPlay = onPlay;
       this.onThemeChange = onThemeChange;
+      this.onModeSelect = onModeSelect;
       this.menu = document.getElementById("menu");
       this.mainPanel = document.getElementById("menu-main");
       this.optionsPanel = document.getElementById("menu-options");
+      this.modesPanel = document.getElementById("menu-modes");
+      this.timerPanel = document.getElementById("menu-timer");
       this.playBtn = document.getElementById("menu-play");
       this.optionsBtn = document.getElementById("menu-options-btn");
       this.exitBtn = document.getElementById("menu-exit");
       this.backBtn = document.getElementById("menu-back");
+      this.modeSurvivalBtn = document.getElementById("mode-survival");
+      this.modeTimerBtn = document.getElementById("mode-timer");
+      this.modeBackBtn = document.getElementById("mode-back");
+      this.timerSeconds = document.getElementById("timer-seconds");
+      this.timerStartBtn = document.getElementById("timer-start");
+      this.timerBackBtn = document.getElementById("timer-back");
       this.musicRange = document.getElementById("opt-music");
       this.sfxRange = document.getElementById("opt-sfx");
       this.toggleGlow = document.getElementById("opt-glow");
@@ -202,6 +289,10 @@
       this.mainPanel.hidden = false;
       this.optionsPanel.hidden = true;
       this.optionsPanel.classList.add("is-hidden");
+      this.modesPanel.hidden = true;
+      this.modesPanel.classList.add("is-hidden");
+      this.timerPanel.hidden = true;
+      this.timerPanel.classList.add("is-hidden");
       [this.playBtn, this.optionsBtn, this.exitBtn, this.backBtn].forEach((btn) => {
         if (!btn) return;
         btn.addEventListener("mouseenter", () => {
@@ -210,9 +301,7 @@
       });
       this.playBtn.addEventListener("click", async () => {
         await this.audio.playClick();
-        await this.audio.startMusic();
-        this.menu.classList.add("is-hidden");
-        this.onPlay();
+        this.openModes();
       });
       this.optionsBtn.addEventListener("click", async () => {
         await this.audio.playClick();
@@ -221,6 +310,35 @@
       this.backBtn.addEventListener("click", async () => {
         await this.audio.playClick();
         this.openMain();
+      });
+      this.modeBackBtn.addEventListener("click", async () => {
+        await this.audio.playClick();
+        this.openMain();
+      });
+      this.timerBackBtn.addEventListener("click", async () => {
+        await this.audio.playClick();
+        this.openModes();
+      });
+      this.modeSurvivalBtn.addEventListener("click", async () => {
+        await this.audio.playClick();
+        await this.audio.startMusic();
+        this.menu.classList.add("is-hidden");
+        if (this.onModeSelect) this.onModeSelect("survival");
+        this.onPlay();
+      });
+      this.modeTimerBtn.addEventListener("click", async () => {
+        await this.audio.playClick();
+        this.openTimer();
+      });
+      this.timerStartBtn.addEventListener("click", async () => {
+        await this.audio.playClick();
+        await this.audio.startMusic();
+        this.menu.classList.add("is-hidden");
+        const seconds = parseInt(this.timerSeconds.value, 10);
+        if (this.onModeSelect) {
+          this.onModeSelect("timer", { duration: Number.isFinite(seconds) ? seconds : 60 });
+        }
+        this.onPlay();
       });
       this.exitBtn.addEventListener("click", async () => {
         await this.audio.playClick();
@@ -274,6 +392,10 @@
       this.optionsPanel.hidden = false;
       this.mainPanel.classList.add("is-hidden");
       this.optionsPanel.classList.remove("is-hidden");
+      this.modesPanel.hidden = true;
+      this.modesPanel.classList.add("is-hidden");
+      this.timerPanel.hidden = true;
+      this.timerPanel.classList.add("is-hidden");
     }
 
     openMain() {
@@ -281,6 +403,41 @@
       this.mainPanel.hidden = false;
       this.optionsPanel.classList.add("is-hidden");
       this.mainPanel.classList.remove("is-hidden");
+      this.modesPanel.hidden = true;
+      this.modesPanel.classList.add("is-hidden");
+      this.timerPanel.hidden = true;
+      this.timerPanel.classList.add("is-hidden");
+    }
+
+    openModes() {
+      this.mainPanel.hidden = true;
+      this.modesPanel.hidden = false;
+      this.mainPanel.classList.add("is-hidden");
+      this.modesPanel.classList.remove("is-hidden");
+      this.optionsPanel.hidden = true;
+      this.optionsPanel.classList.add("is-hidden");
+      this.timerPanel.hidden = true;
+      this.timerPanel.classList.add("is-hidden");
+    }
+
+    openTimer() {
+      this.modesPanel.hidden = true;
+      this.modesPanel.classList.add("is-hidden");
+      this.timerPanel.hidden = false;
+      this.timerPanel.classList.remove("is-hidden");
+      this.mainPanel.hidden = true;
+      this.mainPanel.classList.add("is-hidden");
+      this.optionsPanel.hidden = true;
+      this.optionsPanel.classList.add("is-hidden");
+    }
+
+    showMenu() {
+      this.menu.classList.remove("is-hidden");
+      this.openMain();
+    }
+    showTimer() {
+      this.menu.classList.remove("is-hidden");
+      this.openTimer();
     }
   }
 
@@ -300,6 +457,10 @@
       this.powerUpRadius = 14;
       this.powerUpMin = 3;
       this.powerUpMax = 5;
+      this.survivalBalls = 8;
+      this.survivalTarget = 600;
+      this.survivalTargetStep = 300;
+      this.timerDuration = 60;
     }
   }
 
@@ -335,6 +496,14 @@
       this.hudScoreEl = document.getElementById("hud-score");
       this.hudBallsEl = document.getElementById("hud-balls");
       this.hudLastEl = document.getElementById("hud-last");
+      this.modeEl = document.getElementById("mode");
+      this.roundEl = document.getElementById("round");
+      this.targetEl = document.getElementById("target");
+      this.timeEl = document.getElementById("time-left");
+      this.hudModeEl = document.getElementById("hud-mode");
+      this.hudRoundEl = document.getElementById("hud-round");
+      this.hudTargetEl = document.getElementById("hud-target");
+      this.hudTimeEl = document.getElementById("hud-time");
       this.dropBtn = document.getElementById("drop");
       this.resetBtn = document.getElementById("reset");
     }
@@ -348,13 +517,24 @@
         if (this.audio) this.audio.playClick();
       });
     }
-    render() {
+    render(meta) {
       this.scoreEl.textContent = this.state.score;
-      this.ballsEl.textContent = this.state.ballsLeft;
+      this.ballsEl.textContent = meta && meta.balls ? meta.balls : this.state.ballsLeft;
       this.lastSlotEl.textContent = this.state.lastSlot;
       this.hudScoreEl.textContent = this.state.score;
-      this.hudBallsEl.textContent = this.state.ballsLeft;
+      this.hudBallsEl.textContent = meta && meta.balls ? meta.balls : this.state.ballsLeft;
       this.hudLastEl.textContent = this.state.lastSlot;
+      if (meta) {
+        const { mode, round, target, timeLeft } = meta;
+        if (this.modeEl) this.modeEl.textContent = mode ?? "-";
+        if (this.roundEl) this.roundEl.textContent = round ?? "-";
+        if (this.targetEl) this.targetEl.textContent = target ?? "-";
+        if (this.timeEl) this.timeEl.textContent = timeLeft ?? "-";
+        if (this.hudModeEl) this.hudModeEl.textContent = mode ?? "-";
+        if (this.hudRoundEl) this.hudRoundEl.textContent = round ?? "-";
+        if (this.hudTargetEl) this.hudTargetEl.textContent = target ?? "-";
+        if (this.hudTimeEl) this.hudTimeEl.textContent = timeLeft ?? "-";
+      }
     }
   }
 
@@ -541,7 +721,31 @@
       this.scoreFx = document.getElementById("score-fx");
       this.powerUps = [];
       this.activeBalls = new Set();
+      this.mode = null;
+      this.round = 1;
+      this.target = this.config.survivalTarget;
+      this.timeLeft = this.config.timerDuration;
+      this.timerDuration = this.config.timerDuration;
+      this._lastTick = 0;
+      this._timerEnded = false;
+      this.onTimerEnd = null;
       this._bindEvents();
+    }
+    setMode(mode, options = {}) {
+      this.mode = mode;
+      this.round = 1;
+      this.target = this.config.survivalTarget;
+      this.timerDuration = options.duration || this.config.timerDuration;
+      this.timeLeft = this.timerDuration;
+      this._timerEnded = false;
+      if (mode === "survival") {
+        this.state.ballsLeft = this.config.survivalBalls;
+        this.state.score = 0;
+      } else if (mode === "timer") {
+        this.state.ballsLeft = Infinity;
+        this.state.score = 0;
+      }
+      this.ui.render(this._getMeta());
     }
     start() {
       if (this._started) return;
@@ -553,7 +757,7 @@
       Runner.run(this.runner, this.engine);
       this.ui.bind(() => this.dropBall(), () => this.reset());
       this.slotLabels.render();
-      this.ui.render();
+      this.ui.render(this._getMeta());
       if (!this._keyBound) {
         this._keyBound = true;
         window.addEventListener("keydown", (event) => {
@@ -568,7 +772,8 @@
       }
     }
     dropBall() {
-      if (!this.state.useBall()) return;
+      if (this.mode !== "timer" && !this.state.useBall()) return;
+      if (this.mode === "timer" && this.timeLeft === 0) return;
       const margin = this.config.spawnMargin;
       const x = margin + Math.random() * (this.config.width - margin * 2);
       const y = 40;
@@ -576,18 +781,19 @@
       this.activeBalls.add(ball);
       World.add(this.engine.world, ball);
       if (this.audio) this.audio.playDrop();
-      this.ui.render();
+      this.ui.render(this._getMeta());
     }
     reset() {
       Composite.clear(this.engine.world, false);
       this.activeBalls.clear();
       this.state.reset();
+      this._timerEnded = false;
       this.board = new PachinkoBoard(this.engine, this.config, () => this._getThemeColors());
       this.board.build();
       this._spawnPowerUps();
       this.applyTheme();
       this.slotLabels.render();
-      this.ui.render();
+      this.ui.render(this._getMeta());
     }
     _spawnScoreFx(slotIndex, points) {
       const slotWidth = this.config.width / this.config.slotCount;
@@ -633,13 +839,14 @@
               const maxPoints = this.scoreSystem.pointsForSlot(this.config.slotCount - 1);
               this.audio.playScore(points, maxPoints);
             }
+            this._checkModeProgress();
             ballsToRemove.push(ball);
           }
         }
         if (ballsToRemove.length > 0) {
           World.remove(this.engine.world, ballsToRemove);
           ballsToRemove.forEach((ball) => this.activeBalls.delete(ball));
-          this.ui.render();
+          this.ui.render(this._getMeta());
         }
       });
 
@@ -667,6 +874,65 @@
           }
         }
       });
+
+      Events.on(this.engine, "beforeUpdate", (event) => {
+        if (this.mode !== "timer") return;
+        if (this._timerEnded) return;
+        const delta = event.delta || 16.7;
+        this._lastTick += delta;
+        if (this._lastTick >= 1000) {
+          this._lastTick = 0;
+          this.timeLeft = Math.max(0, this.timeLeft - 1);
+          this.ui.render(this._getMeta());
+          if (this.timeLeft === 0) {
+            this._endTimerMode();
+          }
+        }
+      });
+    }
+
+    _getMeta() {
+      const balls =
+        this.mode === "timer"
+          ? "∞"
+          : Number.isFinite(this.state.ballsLeft)
+            ? this.state.ballsLeft
+            : "-";
+      return {
+        mode: this.mode ? this.mode.toUpperCase() : "-",
+        round: this.mode === "survival" ? this.round : "-",
+        target: this.mode === "survival" ? this.target : "-",
+        timeLeft: this.mode === "timer" ? `${this.timeLeft}s` : "-",
+        balls,
+      };
+    }
+
+    _checkModeProgress() {
+      if (this.mode !== "survival") return;
+      if (this.state.score >= this.target) {
+        this.round += 1;
+        this.target += this.config.survivalTargetStep;
+        this.state.ballsLeft = this.config.survivalBalls;
+        this.state.score = 0;
+        this.reset();
+      } else if (this.state.ballsLeft === 0) {
+        this._loseSurvival();
+      }
+    }
+
+    _loseSurvival() {
+      this.round = 1;
+      this.target = this.config.survivalTarget;
+      this.state.score = 0;
+      this.state.ballsLeft = this.config.survivalBalls;
+      this.reset();
+    }
+
+    _endTimerMode() {
+      this.state.ballsLeft = 0;
+      if (this._timerEnded) return;
+      this._timerEnded = true;
+      if (this.onTimerEnd) this.onTimerEnd(this.state.score, this.timerDuration);
     }
 
     _getThemeColors() {
@@ -705,8 +971,10 @@
     _spawnPowerUps() {
       this.powerUps = [];
       const total =
-        this.config.powerUpMin +
-        Math.floor(Math.random() * (this.config.powerUpMax - this.config.powerUpMin + 1));
+        this.mode === "timer"
+          ? this.config.powerUpMax
+          : this.config.powerUpMin +
+            Math.floor(Math.random() * (this.config.powerUpMax - this.config.powerUpMin + 1));
       for (let i = 0; i < total; i += 1) {
         const powerUp = new PowerUp(this.engine, this.config, () => this._getThemeColors());
         powerUp.create();
@@ -716,14 +984,33 @@
 
     _collectPowerUp(body) {
       const target = this.powerUps.find((p) => p.body === body);
-      if (target) target.collect();
+      if (target) {
+        target.collect();
+        if (this.mode === "timer") {
+          const powerUp = new PowerUp(this.engine, this.config, () => this._getThemeColors());
+          powerUp.create();
+          this.powerUps.push(powerUp);
+          this.applyTheme();
+        }
+      }
     }
   }
 
   const root = document.getElementById("game");
   const audio = new AudioManager();
   const game = new Game(root, audio);
-  const menu = new MenuManager(audio, () => game.start(), () => game.applyTheme());
+  const menu = new MenuManager(
+    audio,
+    () => game.start(),
+    () => game.applyTheme(),
+    (mode, options) => game.setMode(mode, options)
+  );
+  const results = new ResultsManager(
+    () => menu.showTimer(),
+    () => menu.showMenu()
+  );
+  results.init();
   menu.init();
+  game.onTimerEnd = (score, duration) => results.show(score, duration);
   window.__pachinkoStarted = true;
 })();

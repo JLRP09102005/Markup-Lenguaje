@@ -326,6 +326,32 @@ button.secondary {
   letter-spacing: 1.4px;
   text-transform: uppercase;
 }
+.leaderboard {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(0, 240, 255, 0.15);
+  padding: 10px;
+  border-radius: 10px;
+}
+.leader-row {
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.leader-title {
+  margin-top: 6px;
+  padding: 4px 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: rgba(0, 240, 255, 0.85);
+}
+.leader-row:last-child {
+  border-bottom: none;
+}
 .menu-btn {
   appearance: none;
   border: 1px solid rgba(0, 240, 255, 0.6);

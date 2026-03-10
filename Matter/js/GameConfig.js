@@ -14,5 +14,9 @@ export class GameConfig {
     this.powerUpRadius = 14;
     this.powerUpMin = 3;
     this.powerUpMax = 5;
+    this.survivalBalls = 8;
+    this.survivalTarget = 600;
+    this.survivalTargetStep = 300;
+    this.timerDuration = 60;
   }
 }

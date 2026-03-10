@@ -1,6 +1,7 @@
 import { Game } from "./Game.js";
 import { AudioManager } from "./AudioManager.js";
 import { MenuManager } from "./MenuManager.js";
+import { ResultsManager } from "./ResultsManager.js";
 
 window.__pachinkoBooting = true;
 
@@ -21,7 +22,18 @@ const audio = new AudioManager();
 resolveMatter().then((matter) => {
   if (!matter) return;
   const game = new Game(root, matter, audio);
-  const menu = new MenuManager(audio, () => game.start(), () => game.applyTheme());
+  const results = new ResultsManager(
+    () => menu.showTimer(),
+    () => menu.showMenu()
+  );
+  results.init();
+  const menu = new MenuManager(
+    audio,
+    () => game.start(),
+    () => game.applyTheme(),
+    (mode, options) => game.setMode(mode, options)
+  );
   menu.init();
+  game.onTimerEnd = (score, duration) => results.show(score, duration);
   window.__pachinkoStarted = true;
 });

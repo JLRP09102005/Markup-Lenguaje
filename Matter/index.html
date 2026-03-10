@@ -21,6 +21,10 @@
           <div class="stat">Puntos: <span id="score">0</span></div>
           <div class="stat">Bolas: <span id="balls">5</span></div>
           <div class="stat">Ultima ranura: <span id="last-slot">-</span></div>
+          <div class="stat">Modo: <span id="mode">-</span></div>
+          <div class="stat">Ronda: <span id="round">-</span></div>
+          <div class="stat">Objetivo: <span id="target">-</span></div>
+          <div class="stat">Tiempo: <span id="time-left">-</span></div>
         </div>
         <div class="controls">
           <button id="drop">Soltar bola</button>
@@ -37,6 +41,10 @@
           <div class="hud-line">Puntos: <span id="hud-score">0</span></div>
           <div class="hud-line">Bolas: <span id="hud-balls">5</span></div>
           <div class="hud-line">Ultima: <span id="hud-last">-</span></div>
+          <div class="hud-line">Modo: <span id="hud-mode">-</span></div>
+          <div class="hud-line">Ronda: <span id="hud-round">-</span></div>
+          <div class="hud-line">Objetivo: <span id="hud-target">-</span></div>
+          <div class="hud-line">Tiempo: <span id="hud-time">-</span></div>
         </div>
       </main>
     </div>
@@ -52,6 +60,21 @@
         <button class="menu-btn" id="menu-play">Jugar</button>
         <button class="menu-btn secondary" id="menu-options-btn">Opciones</button>
         <button class="menu-btn ghost" id="menu-exit">Salir</button>
+      </div>
+      <div class="menu-card" id="menu-modes" hidden>
+        <h2>Modos</h2>
+        <button class="menu-btn" id="mode-survival">Survival</button>
+        <button class="menu-btn secondary" id="mode-timer">Timer</button>
+        <button class="menu-btn ghost" id="mode-back">Volver</button>
+      </div>
+      <div class="menu-card" id="menu-timer" hidden>
+        <h2>Timer</h2>
+        <label class="opt-row">
+          <span>Segundos</span>
+          <input id="timer-seconds" type="number" min="15" max="300" value="60" />
+        </label>
+        <button class="menu-btn" id="timer-start">Iniciar</button>
+        <button class="menu-btn ghost" id="timer-back">Volver</button>
       </div>
       <div class="menu-card" id="menu-options" hidden>
         <h2>Opciones</h2>
@@ -82,6 +105,17 @@
           </select>
         </label>
         <button class="menu-btn secondary" id="menu-back">Volver</button>
+      </div>
+    </div>
+    <div class="menu-overlay is-hidden" id="timer-results">
+      <div class="menu-card">
+        <h2>Timer - Resultado</h2>
+        <div class="stat">Puntos: <span id="final-score">0</span></div>
+        <div class="hud-title">Leaderboard</div>
+        <div id="leaderboard" class="leaderboard"></div>
+        <button class="menu-btn" id="results-replay">Jugar de nuevo</button>
+        <button class="menu-btn ghost" id="results-menu">Menu</button>
+        <button class="menu-btn secondary" id="results-clear">Borrar leaderboard</button>
       </div>
     </div>
 
