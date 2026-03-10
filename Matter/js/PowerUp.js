@@ -1,14 +1,16 @@
 export class PowerUp {
-  constructor(matter, engine, config) {
+  constructor(matter, engine, config, getColors) {
     this.Matter = matter;
     this.engine = engine;
     this.config = config;
+    this.getColors = getColors;
     this.body = null;
     this.collected = false;
   }
   create() {
     const { Bodies, World } = this.Matter;
     const radius = this.config.powerUpRadius;
+    const colors = this.getColors ? this.getColors() : {};
     const minX = radius + 30;
     const maxX = this.config.width - radius - 30;
     const minY = 170;
@@ -18,7 +20,11 @@ export class PowerUp {
     this.body = Bodies.circle(x, y, radius, {
       isSensor: true,
       isStatic: true,
-      render: { fillStyle: "#00f0ff", strokeStyle: "#ff4bd8", lineWidth: 2 },
+      render: {
+        fillStyle: colors.powerup || "#00f0ff",
+        strokeStyle: colors.powerupStroke || "#ff4bd8",
+        lineWidth: 2,
+      },
     });
     this.body.label = "powerup";
     World.add(this.engine.world, this.body);

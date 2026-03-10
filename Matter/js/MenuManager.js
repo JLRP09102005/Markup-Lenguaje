@@ -1,7 +1,8 @@
 export class MenuManager {
-  constructor(audio, onPlay) {
+  constructor(audio, onPlay, onThemeChange) {
     this.audio = audio;
     this.onPlay = onPlay;
+    this.onThemeChange = onThemeChange;
     this.menu = document.getElementById("menu");
     this.mainPanel = document.getElementById("menu-main");
     this.optionsPanel = document.getElementById("menu-options");
@@ -58,12 +59,18 @@ export class MenuManager {
     this.toggleMotion.addEventListener("change", (e) => {
       document.body.classList.toggle("reduce-motion", e.target.checked);
     });
-    this.themeSelect.addEventListener("change", (e) => {
-      document.body.classList.remove("theme-emerald");
-      if (e.target.value === "emerald") {
-        document.body.classList.add("theme-emerald");
-      }
-    });
+      this.themeSelect.addEventListener("change", (e) => {
+        document.body.classList.remove(
+          "theme-emerald",
+          "theme-solar",
+          "theme-violet",
+          "theme-noir"
+        );
+        if (e.target.value !== "cyber") {
+          document.body.classList.add(`theme-${e.target.value}`);
+        }
+        if (this.onThemeChange) this.onThemeChange();
+      });
 
     window.addEventListener("keydown", (event) => {
       if (event.code !== "Escape") return;

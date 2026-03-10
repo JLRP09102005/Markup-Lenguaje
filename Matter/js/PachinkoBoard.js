@@ -1,8 +1,9 @@
 export class PachinkoBoard {
-  constructor(matter, engine, config) {
+  constructor(matter, engine, config, getColors) {
     this.Matter = matter;
     this.engine = engine;
     this.config = config;
+    this.getColors = getColors;
     this.pins = [];
     this.slots = [];
     this.walls = [];
@@ -33,6 +34,7 @@ export class PachinkoBoard {
     const { width, pinRows, pinCols, pinRadius } = this.config;
     const spacingX = width / (pinCols + 1);
     const spacingY = 70;
+    const colors = this.getColors ? this.getColors() : {};
     for (let row = 0; row < pinRows; row += 1) {
       for (let col = 0; col < pinCols; col += 1) {
         const offset = row % 2 === 0 ? spacingX / 2 : 0;
@@ -40,7 +42,7 @@ export class PachinkoBoard {
         const y = 140 + row * spacingY;
         const pin = Bodies.circle(x, y, pinRadius, {
           isStatic: true,
-          render: { fillStyle: "#00f0ff" },
+          render: { fillStyle: colors.pin || "#00f0ff" },
         });
         this.pins.push(pin);
       }
@@ -51,11 +53,12 @@ export class PachinkoBoard {
     const { Bodies, World } = this.Matter;
     const { width, height, slotCount, slotHeight } = this.config;
     const gap = width / slotCount;
+    const colors = this.getColors ? this.getColors() : {};
     for (let i = 0; i <= slotCount; i += 1) {
       const x = i * gap;
       const wall = Bodies.rectangle(x, height - slotHeight / 2, 10, slotHeight, {
         isStatic: true,
-        render: { fillStyle: "#1d2544" },
+        render: { fillStyle: colors.slot || "#1d2544" },
       });
       this.slots.push(wall);
     }

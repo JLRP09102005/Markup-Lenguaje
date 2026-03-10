@@ -21,7 +21,7 @@ const audio = new AudioManager();
 resolveMatter().then((matter) => {
   if (!matter) return;
   const game = new Game(root, matter, audio);
-  const menu = new MenuManager(audio, () => game.start());
+  const menu = new MenuManager(audio, () => game.start(), () => game.applyTheme());
   menu.init();
   window.__pachinkoStarted = true;
 });

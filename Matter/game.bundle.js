@@ -180,9 +180,10 @@
   }
 
   class MenuManager {
-    constructor(audio, onPlay) {
+    constructor(audio, onPlay, onThemeChange) {
       this.audio = audio;
       this.onPlay = onPlay;
+      this.onThemeChange = onThemeChange;
       this.menu = document.getElementById("menu");
       this.mainPanel = document.getElementById("menu-main");
       this.optionsPanel = document.getElementById("menu-options");
@@ -240,10 +241,16 @@
         document.body.classList.toggle("reduce-motion", e.target.checked);
       });
       this.themeSelect.addEventListener("change", (e) => {
-        document.body.classList.remove("theme-emerald");
-        if (e.target.value === "emerald") {
-          document.body.classList.add("theme-emerald");
+        document.body.classList.remove(
+          "theme-emerald",
+          "theme-solar",
+          "theme-violet",
+          "theme-noir"
+        );
+        if (e.target.value !== "cyber") {
+          document.body.classList.add(`theme-${e.target.value}`);
         }
+        if (this.onThemeChange) this.onThemeChange();
       });
 
       window.addEventListener("keydown", (event) => {
@@ -350,9 +357,10 @@
   }
 
   class PachinkoBoard {
-    constructor(engine, config) {
+    constructor(engine, config, getColors) {
       this.engine = engine;
       this.config = config;
+      this.getColors = getColors;
       this.pins = [];
       this.slots = [];
       this.walls = [];
@@ -381,6 +389,7 @@
       const { width, pinRows, pinCols, pinRadius } = this.config;
       const spacingX = width / (pinCols + 1);
       const spacingY = 70;
+      const colors = this.getColors ? this.getColors() : {};
       for (let row = 0; row < pinRows; row += 1) {
         for (let col = 0; col < pinCols; col += 1) {
           const offset = row % 2 === 0 ? spacingX / 2 : 0;
@@ -388,7 +397,7 @@
           const y = 140 + row * spacingY;
           const pin = Bodies.circle(x, y, pinRadius, {
             isStatic: true,
-            render: { fillStyle: "#00f0ff" },
+            render: { fillStyle: colors.pin || "#00f0ff" },
           });
           this.pins.push(pin);
         }
@@ -398,11 +407,12 @@
     _createSlots() {
       const { width, height, slotCount, slotHeight } = this.config;
       const gap = width / slotCount;
+      const colors = this.getColors ? this.getColors() : {};
       for (let i = 0; i <= slotCount; i += 1) {
         const x = i * gap;
         const wall = Bodies.rectangle(x, height - slotHeight / 2, 10, slotHeight, {
           isStatic: true,
-          render: { fillStyle: "#1d2544" },
+          render: { fillStyle: colors.slot || "#1d2544" },
         });
         this.slots.push(wall);
       }
@@ -411,15 +421,17 @@
   }
 
   class BallFactory {
-    constructor(config) {
+    constructor(config, getColors) {
       this.config = config;
+      this.getColors = getColors;
     }
     createBall(x, y) {
+      const colors = this.getColors ? this.getColors() : {};
       return Bodies.circle(x, y, this.config.ballRadius, {
         restitution: 0.6,
         friction: 0.01,
         density: 0.002,
-        render: { fillStyle: "#ff4bd8" },
+        render: { fillStyle: colors.ball || "#ff4bd8" },
       });
     }
   }
@@ -459,9 +471,10 @@
   }
 
   class PowerUp {
-    constructor(engine, config) {
+    constructor(engine, config, getColors) {
       this.engine = engine;
       this.config = config;
+      this.getColors = getColors;
       this.body = null;
       this.collected = false;
     }
@@ -473,10 +486,15 @@
       const maxY = this.config.height / 2;
       const x = minX + Math.random() * (maxX - minX);
       const y = minY + Math.random() * (maxY - minY);
+      const colors = this.getColors ? this.getColors() : {};
       this.body = Bodies.circle(x, y, radius, {
         isSensor: true,
         isStatic: true,
-        render: { fillStyle: "#00f0ff", strokeStyle: "#ff4bd8", lineWidth: 2 },
+        render: {
+          fillStyle: colors.powerup || "#00f0ff",
+          strokeStyle: colors.powerupStroke || "#ff4bd8",
+          lineWidth: 2,
+        },
       });
       this.body.label = "powerup";
       World.add(this.engine.world, this.body);
@@ -508,8 +526,8 @@
         },
       });
       this.runner = Runner.create();
-      this.board = new PachinkoBoard(this.engine, this.config);
-      this.ballFactory = new BallFactory(this.config);
+      this.board = new PachinkoBoard(this.engine, this.config, () => this._getThemeColors());
+      this.ballFactory = new BallFactory(this.config, () => this._getThemeColors());
       this.scoreSystem = new ScoreSystem(this.config, this.state);
       this.ui = new UIManager(this.state, this.audio);
       this.slotLabels = new SlotLabelManager(
@@ -518,7 +536,7 @@
         this.scoreSystem
       );
       this.scoreFx = document.getElementById("score-fx");
-      this.powerUp = new PowerUp(this.engine, this.config);
+      this.powerUp = new PowerUp(this.engine, this.config, () => this._getThemeColors());
       this.activeBalls = new Set();
       this._bindEvents();
     }
@@ -527,6 +545,7 @@
       this._started = true;
       this.board.build();
       this.powerUp.create();
+      this.applyTheme();
       Render.run(this.render);
       Runner.run(this.runner, this.engine);
       this.ui.bind(() => this.dropBall(), () => this.reset());
@@ -557,10 +576,11 @@
       Composite.clear(this.engine.world, false);
       this.activeBalls.clear();
       this.state.reset();
-      this.board = new PachinkoBoard(this.engine, this.config);
+      this.board = new PachinkoBoard(this.engine, this.config, () => this._getThemeColors());
       this.board.build();
-      this.powerUp = new PowerUp(this.engine, this.config);
+      this.powerUp = new PowerUp(this.engine, this.config, () => this._getThemeColors());
       this.powerUp.create();
+      this.applyTheme();
       this.slotLabels.render();
       this.ui.render();
     }
@@ -643,12 +663,44 @@
         }
       });
     }
+
+    _getThemeColors() {
+      const styles = getComputedStyle(document.body);
+      return {
+        board: styles.getPropertyValue("--board").trim(),
+        pin: styles.getPropertyValue("--pin").trim(),
+        slot: styles.getPropertyValue("--slot").trim(),
+        ball: styles.getPropertyValue("--ball").trim(),
+        powerup: styles.getPropertyValue("--powerup").trim(),
+        powerupStroke: styles.getPropertyValue("--powerup-stroke").trim(),
+      };
+    }
+
+    applyTheme() {
+      const colors = this._getThemeColors();
+      if (colors.board) {
+        this.render.options.background = colors.board;
+      }
+      this.board.pins.forEach((pin) => {
+        pin.render.fillStyle = colors.pin;
+      });
+      this.board.slots.forEach((slot) => {
+        slot.render.fillStyle = colors.slot;
+      });
+      this.activeBalls.forEach((ball) => {
+        ball.render.fillStyle = colors.ball;
+      });
+      if (this.powerUp.body) {
+        this.powerUp.body.render.fillStyle = colors.powerup;
+        this.powerUp.body.render.strokeStyle = colors.powerupStroke;
+      }
+    }
   }
 
   const root = document.getElementById("game");
   const audio = new AudioManager();
   const game = new Game(root, audio);
-  const menu = new MenuManager(audio, () => game.start());
+  const menu = new MenuManager(audio, () => game.start(), () => game.applyTheme());
   menu.init();
   window.__pachinkoStarted = true;
 })();

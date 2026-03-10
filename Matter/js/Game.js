@@ -27,8 +27,12 @@ export class Game {
       },
     });
     this.runner = this.Matter.Runner.create();
-    this.board = new PachinkoBoard(this.Matter, this.engine, this.config);
-    this.ballFactory = new BallFactory(this.Matter, this.config);
+    this.board = new PachinkoBoard(this.Matter, this.engine, this.config, () =>
+      this._getThemeColors()
+    );
+    this.ballFactory = new BallFactory(this.Matter, this.config, () =>
+      this._getThemeColors()
+    );
     this.scoreSystem = new ScoreSystem(this.config, this.state);
     this.ui = new UIManager(this.state, this.audio);
     this.slotLabels = new SlotLabelManager(
@@ -37,7 +41,9 @@ export class Game {
       this.scoreSystem
     );
     this.scoreFx = document.getElementById("score-fx");
-    this.powerUp = new PowerUp(this.Matter, this.engine, this.config);
+    this.powerUp = new PowerUp(this.Matter, this.engine, this.config, () =>
+      this._getThemeColors()
+    );
     this.activeBalls = new Set();
     this._bindEvents();
   }
@@ -46,6 +52,7 @@ export class Game {
     this._started = true;
     this.board.build();
     this.powerUp.create();
+    this.applyTheme();
     this.Matter.Render.run(this.render);
     this.Matter.Runner.run(this.runner, this.engine);
     this.ui.bind(() => this.dropBall(), () => this.reset());
@@ -76,10 +83,15 @@ export class Game {
     this.Matter.Composite.clear(this.engine.world, false);
     this.activeBalls.clear();
     this.state.reset();
-    this.board = new PachinkoBoard(this.Matter, this.engine, this.config);
+    this.board = new PachinkoBoard(this.Matter, this.engine, this.config, () =>
+      this._getThemeColors()
+    );
     this.board.build();
-    this.powerUp = new PowerUp(this.Matter, this.engine, this.config);
+    this.powerUp = new PowerUp(this.Matter, this.engine, this.config, () =>
+      this._getThemeColors()
+    );
     this.powerUp.create();
+    this.applyTheme();
     this.slotLabels.render();
     this.ui.render();
   }
@@ -162,5 +174,37 @@ export class Game {
         }
       }
     });
+  }
+
+  _getThemeColors() {
+    const styles = getComputedStyle(document.body);
+    return {
+      board: styles.getPropertyValue("--board").trim(),
+      pin: styles.getPropertyValue("--pin").trim(),
+      slot: styles.getPropertyValue("--slot").trim(),
+      ball: styles.getPropertyValue("--ball").trim(),
+      powerup: styles.getPropertyValue("--powerup").trim(),
+      powerupStroke: styles.getPropertyValue("--powerup-stroke").trim(),
+    };
+  }
+
+  applyTheme() {
+    const colors = this._getThemeColors();
+    if (colors.board) {
+      this.render.options.background = colors.board;
+    }
+    this.board.pins.forEach((pin) => {
+      pin.render.fillStyle = colors.pin;
+    });
+    this.board.slots.forEach((slot) => {
+      slot.render.fillStyle = colors.slot;
+    });
+    this.activeBalls.forEach((ball) => {
+      ball.render.fillStyle = colors.ball;
+    });
+    if (this.powerUp.body) {
+      this.powerUp.body.render.fillStyle = colors.powerup;
+      this.powerUp.body.render.strokeStyle = colors.powerupStroke;
+    }
   }
 }

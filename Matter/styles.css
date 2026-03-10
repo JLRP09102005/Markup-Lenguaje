@@ -4,6 +4,11 @@
   --accent: #00f0ff;
   --accent-2: #ff4bd8;
   --board: #101527;
+  --pin: #00f0ff;
+  --slot: #1d2544;
+  --ball: #ff4bd8;
+  --powerup: #00f0ff;
+  --powerup-stroke: #ff4bd8;
   --panel: rgba(16, 21, 39, 0.88);
   --panel-border: rgba(0, 240, 255, 0.25);
   --soft: rgba(255, 255, 255, 0.06);
@@ -348,6 +353,42 @@ button.secondary {
 body.theme-emerald {
   --accent: #4dff9a;
   --accent-2: #00d1ff;
+  --board: #0f1b1a;
+  --pin: #4dff9a;
+  --slot: #1b2b2a;
+  --ball: #00d1ff;
+  --powerup: #4dff9a;
+  --powerup-stroke: #00d1ff;
+}
+body.theme-solar {
+  --accent: #ffb800;
+  --accent-2: #ff5a36;
+  --board: #1a1222;
+  --pin: #ffb800;
+  --slot: #2b1a12;
+  --ball: #ff5a36;
+  --powerup: #ffb800;
+  --powerup-stroke: #ff5a36;
+}
+body.theme-violet {
+  --accent: #9b7dff;
+  --accent-2: #ff7bd2;
+  --board: #14102a;
+  --pin: #9b7dff;
+  --slot: #241d46;
+  --ball: #ff7bd2;
+  --powerup: #9b7dff;
+  --powerup-stroke: #ff7bd2;
+}
+body.theme-noir {
+  --accent: #d4d4d4;
+  --accent-2: #8a8a8a;
+  --board: #0b0b0f;
+  --pin: #d4d4d4;
+  --slot: #1a1a1f;
+  --ball: #8a8a8a;
+  --powerup: #d4d4d4;
+  --powerup-stroke: #8a8a8a;
 }
 
 body.no-glow #game,
