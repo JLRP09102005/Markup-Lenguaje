@@ -40,6 +40,41 @@
         </div>
       </main>
     </div>
+    <div class="menu-overlay" id="menu">
+      <div class="menu-card" id="menu-main">
+        <h2>Menu</h2>
+        <button class="menu-btn" id="menu-play">Jugar</button>
+        <button class="menu-btn secondary" id="menu-options-btn">Opciones</button>
+        <button class="menu-btn ghost" id="menu-exit">Salir</button>
+      </div>
+      <div class="menu-card" id="menu-options" hidden>
+        <h2>Opciones</h2>
+        <label class="opt-row">
+          <span>Musica</span>
+          <input id="opt-music" type="range" min="0" max="1" step="0.01" value="0.35" />
+        </label>
+        <label class="opt-row">
+          <span>SFX</span>
+          <input id="opt-sfx" type="range" min="0" max="1" step="0.01" value="0.5" />
+        </label>
+        <label class="opt-row">
+          <span>Brillo neon</span>
+          <input id="opt-glow" type="checkbox" checked />
+        </label>
+        <label class="opt-row">
+          <span>Reducir movimiento</span>
+          <input id="opt-motion" type="checkbox" />
+        </label>
+        <label class="opt-row">
+          <span>Tema</span>
+          <select id="opt-theme">
+            <option value="cyber">Cyber</option>
+            <option value="emerald">Emerald</option>
+          </select>
+        </label>
+        <button class="menu-btn secondary" id="menu-back">Volver</button>
+      </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
     <script type="module" src="js/main.js"></script>

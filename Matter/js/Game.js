@@ -8,9 +8,10 @@ import { SlotLabelManager } from "./SlotLabelManager.js";
 import { PowerUp } from "./PowerUp.js";
 
 export class Game {
-  constructor(root, matter) {
+  constructor(root, matter, audio) {
     this.root = root;
     this.Matter = matter;
+    this.audio = audio;
     this.config = new GameConfig();
     this.state = new GameState(this.config);
     this.engine = this.Matter.Engine.create();
@@ -29,7 +30,7 @@ export class Game {
     this.board = new PachinkoBoard(this.Matter, this.engine, this.config);
     this.ballFactory = new BallFactory(this.Matter, this.config);
     this.scoreSystem = new ScoreSystem(this.config, this.state);
-    this.ui = new UIManager(this.state);
+    this.ui = new UIManager(this.state, this.audio);
     this.slotLabels = new SlotLabelManager(
       document.getElementById("slot-labels"),
       this.config,
@@ -41,6 +42,8 @@ export class Game {
     this._bindEvents();
   }
   start() {
+    if (this._started) return;
+    this._started = true;
     this.board.build();
     this.powerUp.create();
     this.Matter.Render.run(this.render);
@@ -57,6 +60,7 @@ export class Game {
     const ball = this.ballFactory.createBall(x, y);
     this.activeBalls.add(ball);
     this.Matter.World.add(this.engine.world, ball);
+    if (this.audio) this.audio.playDrop();
     this.ui.render();
   }
   reset() {
@@ -98,6 +102,7 @@ export class Game {
     });
     this.activeBalls.add(clone);
     this.Matter.World.add(this.engine.world, clone);
+    if (this.audio) this.audio.playPowerUp();
   }
   _bindEvents() {
     this.Matter.Events.on(this.engine, "afterUpdate", () => {
@@ -109,6 +114,10 @@ export class Game {
           this.state.addScore(points);
           this.state.lastSlot = String(slotIndex + 1);
           this._spawnScoreFx(slotIndex, points);
+          if (this.audio) {
+            const maxPoints = this.scoreSystem.pointsForSlot(this.config.slotCount - 1);
+            this.audio.playScore(points, maxPoints);
+          }
           ballsToRemove.push(ball);
         }
       }
@@ -131,6 +140,16 @@ export class Game {
         } else if (isPowerUpB && this.activeBalls.has(a)) {
           this._duplicateBall(a);
           this.powerUp.collect();
+        }
+        const ball = this.activeBalls.has(a) ? a : this.activeBalls.has(b) ? b : null;
+        if (ball && this.audio) {
+          const now = this.engine.timing.timestamp;
+          if (!ball.plugin) ball.plugin = {};
+          if (!ball.plugin.lastBounce || now - ball.plugin.lastBounce > 80) {
+            ball.plugin.lastBounce = now;
+            const speed = Math.min(Math.hypot(ball.velocity.x, ball.velocity.y) / 8, 1);
+            this.audio.playBounce(speed);
+          }
         }
       }
     });

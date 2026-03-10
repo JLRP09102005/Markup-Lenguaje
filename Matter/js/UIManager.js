@@ -1,6 +1,7 @@
 export class UIManager {
-  constructor(state) {
+  constructor(state, audio) {
     this.state = state;
+    this.audio = audio;
     this.scoreEl = document.getElementById("score");
     this.ballsEl = document.getElementById("balls");
     this.lastSlotEl = document.getElementById("last-slot");
@@ -13,6 +14,12 @@ export class UIManager {
   bind(onDrop, onReset) {
     this.dropBtn.addEventListener("click", onDrop);
     this.resetBtn.addEventListener("click", onReset);
+    this.dropBtn.addEventListener("mouseenter", () => {
+      if (this.audio) this.audio.playClick();
+    });
+    this.resetBtn.addEventListener("mouseenter", () => {
+      if (this.audio) this.audio.playClick();
+    });
   }
   render() {
     this.scoreEl.textContent = this.state.score;

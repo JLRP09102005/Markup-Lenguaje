@@ -272,3 +272,89 @@ button.secondary {
     bottom: 12px;
   }
 }
+
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 20% 20%, rgba(10, 18, 36, 0.9), rgba(4, 6, 14, 0.95));
+  z-index: 10;
+  transition: opacity 200ms ease, visibility 200ms ease;
+}
+.menu-overlay.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.menu-card {
+  width: min(420px, 90vw);
+  background: rgba(8, 12, 24, 0.9);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  border-radius: 16px;
+  padding: 24px;
+  display: grid;
+  gap: 12px;
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.25);
+}
+.menu-card h2 {
+  margin: 0 0 8px;
+  font-family: "Orbitron", "Space Grotesk", sans-serif;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+.menu-btn {
+  appearance: none;
+  border: 1px solid rgba(0, 240, 255, 0.6);
+  background: linear-gradient(130deg, rgba(0, 240, 255, 0.35), rgba(255, 75, 216, 0.35));
+  color: var(--ink);
+  font-size: 14px;
+  padding: 10px 12px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
+}
+.menu-btn.secondary {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(230, 240, 255, 0.8);
+}
+.menu-btn.ghost {
+  background: transparent;
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  color: rgba(230, 240, 255, 0.6);
+}
+.opt-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(0, 240, 255, 0.15);
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+.opt-row input[type="range"] {
+  width: 160px;
+}
+
+body.theme-emerald {
+  --accent: #4dff9a;
+  --accent-2: #00d1ff;
+}
+
+body.no-glow #game,
+body.no-glow .panel,
+body.no-glow .hud,
+body.no-glow .menu-card {
+  box-shadow: none;
+}
+
+body.reduce-motion * {
+  animation: none !important;
+  transition: none !important;
+}

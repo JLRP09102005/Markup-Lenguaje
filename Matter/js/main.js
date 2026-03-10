@@ -1,4 +1,8 @@
 import { Game } from "./Game.js";
+import { AudioManager } from "./AudioManager.js";
+import { MenuManager } from "./MenuManager.js";
+
+window.__pachinkoBooting = true;
 
 async function resolveMatter() {
   if (window.Matter) return window.Matter;
@@ -13,9 +17,11 @@ async function resolveMatter() {
 }
 
 const root = document.getElementById("game");
+const audio = new AudioManager();
 resolveMatter().then((matter) => {
   if (!matter) return;
-  const game = new Game(root, matter);
-  game.start();
+  const game = new Game(root, matter, audio);
+  const menu = new MenuManager(audio, () => game.start());
+  menu.init();
   window.__pachinkoStarted = true;
 });

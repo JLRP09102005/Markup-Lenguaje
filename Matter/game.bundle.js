@@ -1,11 +1,195 @@
 (function () {
-  if (window.__pachinkoStarted) return;
+  if (window.__pachinkoStarted || window.__pachinkoBooting) return;
   if (!window.Matter) {
     console.error("Matter.js no disponible");
     return;
   }
   const Matter = window.Matter;
   const { Engine, Render, Runner, World, Bodies, Body, Events, Composite } = Matter;
+
+  class AudioManager {
+    constructor() {
+      this.ctx = null;
+      this.musicGain = null;
+      this.sfxGain = null;
+      this.musicNodes = null;
+      this.musicVolume = 0.35;
+      this.sfxVolume = 0.5;
+    }
+    async ensureContext() {
+      if (this.ctx) return this.ctx;
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return null;
+      this.ctx = new AudioCtx();
+      this.musicGain = this.ctx.createGain();
+      this.sfxGain = this.ctx.createGain();
+      this.musicGain.gain.value = this.musicVolume;
+      this.sfxGain.gain.value = this.sfxVolume;
+      this.musicGain.connect(this.ctx.destination);
+      this.sfxGain.connect(this.ctx.destination);
+      return this.ctx;
+    }
+    async resume() {
+      const ctx = await this.ensureContext();
+      if (ctx && ctx.state === "suspended") {
+        await ctx.resume();
+      }
+    }
+    setMusicVolume(value) {
+      this.musicVolume = value;
+      if (this.musicGain) this.musicGain.gain.value = value;
+    }
+    setSfxVolume(value) {
+      this.sfxVolume = value;
+      if (this.sfxGain) this.sfxGain.gain.value = value;
+    }
+    async startMusic() {
+      await this.resume();
+      if (!this.ctx || this.musicNodes) return;
+      const osc1 = this.ctx.createOscillator();
+      const osc2 = this.ctx.createOscillator();
+      const lfo = this.ctx.createOscillator();
+      const lfoGain = this.ctx.createGain();
+
+      osc1.type = "sine";
+      osc2.type = "triangle";
+      osc1.frequency.value = 110;
+      osc2.frequency.value = 220;
+      lfo.type = "sine";
+      lfo.frequency.value = 0.2;
+      lfoGain.gain.value = 12;
+
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc2.frequency);
+
+      osc1.connect(this.musicGain);
+      osc2.connect(this.musicGain);
+
+      osc1.start();
+      osc2.start();
+      lfo.start();
+
+      this.musicNodes = { osc1, osc2, lfo, lfoGain };
+    }
+    stopMusic() {
+      if (!this.musicNodes) return;
+      this.musicNodes.osc1.stop();
+      this.musicNodes.osc2.stop();
+      this.musicNodes.lfo.stop();
+      this.musicNodes = null;
+    }
+    async playClick() {
+      await this.resume();
+      if (!this.ctx) return;
+      this._beep(520, 0.05);
+    }
+    async playDrop() {
+      await this.resume();
+      if (!this.ctx) return;
+      this._beep(320, 0.06);
+    }
+    async playBounce(intensity = 0.5) {
+      await this.resume();
+      if (!this.ctx) return;
+      const freq = 240 + Math.floor(intensity * 260);
+      this._beep(freq, 0.03 + intensity * 0.04);
+    }
+    async playPowerUp() {
+      await this.resume();
+      if (!this.ctx) return;
+      this._beep(780, 0.09);
+      this._beep(980, 0.08, 0.02);
+    }
+    async playScore(points, maxPoints) {
+      await this.resume();
+      if (!this.ctx) return;
+      const ratio = Math.min(points / maxPoints, 1);
+      this._beep(420 + ratio * 420, 0.08 + ratio * 0.08);
+      if (ratio > 0.7) this._beep(980, 0.09, 0.03);
+    }
+    _beep(freq, duration, delay = 0) {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = "square";
+      osc.frequency.value = freq;
+      gain.gain.value = this.sfxVolume;
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+      const now = this.ctx.currentTime + delay;
+      osc.start(now);
+      osc.stop(now + duration);
+    }
+  }
+
+  class MenuManager {
+    constructor(audio, onPlay) {
+      this.audio = audio;
+      this.onPlay = onPlay;
+      this.menu = document.getElementById("menu");
+      this.mainPanel = document.getElementById("menu-main");
+      this.optionsPanel = document.getElementById("menu-options");
+      this.playBtn = document.getElementById("menu-play");
+      this.optionsBtn = document.getElementById("menu-options-btn");
+      this.exitBtn = document.getElementById("menu-exit");
+      this.backBtn = document.getElementById("menu-back");
+      this.musicRange = document.getElementById("opt-music");
+      this.sfxRange = document.getElementById("opt-sfx");
+      this.toggleGlow = document.getElementById("opt-glow");
+      this.toggleMotion = document.getElementById("opt-motion");
+      this.themeSelect = document.getElementById("opt-theme");
+    }
+    init() {
+      this.menu.classList.remove("is-hidden");
+      this.mainPanel.hidden = false;
+      this.optionsPanel.hidden = true;
+      [this.playBtn, this.optionsBtn, this.exitBtn, this.backBtn].forEach((btn) => {
+        if (!btn) return;
+        btn.addEventListener("mouseenter", () => {
+          this.audio.playClick();
+        });
+      });
+      this.playBtn.addEventListener("click", async () => {
+        await this.audio.playClick();
+        await this.audio.startMusic();
+        this.menu.classList.add("is-hidden");
+        this.onPlay();
+      });
+      this.optionsBtn.addEventListener("click", async () => {
+        await this.audio.playClick();
+        this.mainPanel.hidden = true;
+        this.optionsPanel.hidden = false;
+      });
+      this.backBtn.addEventListener("click", async () => {
+        await this.audio.playClick();
+        this.optionsPanel.hidden = true;
+        this.mainPanel.hidden = false;
+      });
+      this.exitBtn.addEventListener("click", async () => {
+        await this.audio.playClick();
+        window.close();
+        window.location.href = "about:blank";
+      });
+
+      this.musicRange.addEventListener("input", (e) => {
+        this.audio.setMusicVolume(parseFloat(e.target.value));
+      });
+      this.sfxRange.addEventListener("input", (e) => {
+        this.audio.setSfxVolume(parseFloat(e.target.value));
+      });
+      this.toggleGlow.addEventListener("change", (e) => {
+        document.body.classList.toggle("no-glow", !e.target.checked);
+      });
+      this.toggleMotion.addEventListener("change", (e) => {
+        document.body.classList.toggle("reduce-motion", e.target.checked);
+      });
+      this.themeSelect.addEventListener("change", (e) => {
+        document.body.classList.remove("theme-emerald");
+        if (e.target.value === "emerald") {
+          document.body.classList.add("theme-emerald");
+        }
+      });
+    }
+  }
 
   class GameConfig {
     constructor() {
@@ -47,8 +231,9 @@
   }
 
   class UIManager {
-    constructor(state) {
+    constructor(state, audio) {
       this.state = state;
+      this.audio = audio;
       this.scoreEl = document.getElementById("score");
       this.ballsEl = document.getElementById("balls");
       this.lastSlotEl = document.getElementById("last-slot");
@@ -61,6 +246,12 @@
     bind(onDrop, onReset) {
       this.dropBtn.addEventListener("click", onDrop);
       this.resetBtn.addEventListener("click", onReset);
+      this.dropBtn.addEventListener("mouseenter", () => {
+        if (this.audio) this.audio.playClick();
+      });
+      this.resetBtn.addEventListener("mouseenter", () => {
+        if (this.audio) this.audio.playClick();
+      });
     }
     render() {
       this.scoreEl.textContent = this.state.score;
@@ -213,8 +404,9 @@
   }
 
   class Game {
-    constructor(root) {
+    constructor(root, audio) {
       this.root = root;
+      this.audio = audio;
       this.config = new GameConfig();
       this.state = new GameState(this.config);
       this.engine = Engine.create();
@@ -233,7 +425,7 @@
       this.board = new PachinkoBoard(this.engine, this.config);
       this.ballFactory = new BallFactory(this.config);
       this.scoreSystem = new ScoreSystem(this.config, this.state);
-      this.ui = new UIManager(this.state);
+      this.ui = new UIManager(this.state, this.audio);
       this.slotLabels = new SlotLabelManager(
         document.getElementById("slot-labels"),
         this.config,
@@ -245,6 +437,8 @@
       this._bindEvents();
     }
     start() {
+      if (this._started) return;
+      this._started = true;
       this.board.build();
       this.powerUp.create();
       Render.run(this.render);
@@ -261,6 +455,7 @@
       const ball = this.ballFactory.createBall(x, y);
       this.activeBalls.add(ball);
       World.add(this.engine.world, ball);
+      if (this.audio) this.audio.playDrop();
       this.ui.render();
     }
     reset() {
@@ -302,6 +497,7 @@
       });
       this.activeBalls.add(clone);
       World.add(this.engine.world, clone);
+      if (this.audio) this.audio.playPowerUp();
     }
     _bindEvents() {
       Events.on(this.engine, "afterUpdate", () => {
@@ -313,6 +509,10 @@
             this.state.addScore(points);
             this.state.lastSlot = String(slotIndex + 1);
             this._spawnScoreFx(slotIndex, points);
+            if (this.audio) {
+              const maxPoints = this.scoreSystem.pointsForSlot(this.config.slotCount - 1);
+              this.audio.playScore(points, maxPoints);
+            }
             ballsToRemove.push(ball);
           }
         }
@@ -327,8 +527,8 @@
         for (const pair of event.pairs) {
           const a = pair.bodyA;
           const b = pair.bodyB;
-        const isPowerUpA = a.label === "powerup";
-        const isPowerUpB = b.label === "powerup";
+          const isPowerUpA = a.label === "powerup";
+          const isPowerUpB = b.label === "powerup";
         if (isPowerUpA && this.activeBalls.has(b)) {
           this._duplicateBall(b);
           this.powerUp.collect();
@@ -336,13 +536,25 @@
           this._duplicateBall(a);
           this.powerUp.collect();
         }
+        const ball = this.activeBalls.has(a) ? a : this.activeBalls.has(b) ? b : null;
+        if (ball && this.audio) {
+          const now = this.engine.timing.timestamp;
+          if (!ball.plugin) ball.plugin = {};
+          if (!ball.plugin.lastBounce || now - ball.plugin.lastBounce > 80) {
+            ball.plugin.lastBounce = now;
+            const speed = Math.min(Math.hypot(ball.velocity.x, ball.velocity.y) / 8, 1);
+            this.audio.playBounce(speed);
+          }
+        }
       }
     });
     }
   }
 
   const root = document.getElementById("game");
-  const game = new Game(root);
-  game.start();
+  const audio = new AudioManager();
+  const game = new Game(root, audio);
+  const menu = new MenuManager(audio, () => game.start());
+  menu.init();
   window.__pachinkoStarted = true;
 })();
