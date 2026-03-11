@@ -29,13 +29,7 @@ resolveMatter().then((matter) => {
   );
   results.init();
   const survivalResults = new SurvivalResultsManager(
-    async () => {
-      await audio.startMusic();
-      menu.hideMenu();
-      game.setMode("survival");
-      game.reset();
-      game.start();
-    },
+    () => menu.showSurvivalBet(),
     () => menu.showMenu()
   );
   survivalResults.init();
@@ -43,7 +37,13 @@ resolveMatter().then((matter) => {
     audio,
     () => game.start(),
     () => game.applyTheme(),
-    (mode, options) => game.setMode(mode, options)
+    (mode, options) => game.setMode(mode, options),
+    () => ({
+      bank: game.state.bank,
+      bet: game.state.bet,
+      min: game.config.betMin,
+      step: game.config.betStep,
+    })
   );
   menu.init();
   game.onTimerEnd = (score, duration) => results.show(score, duration);

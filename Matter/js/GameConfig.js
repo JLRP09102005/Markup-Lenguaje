@@ -14,15 +14,23 @@ export class GameConfig {
     this.powerUpRadius = 14;
     this.powerUpMin = 3;
     this.powerUpMax = 5;
+    this.bankStart = 1500;
+    this.betMin = 25;
+    this.betStep = 25;
     this.survivalBalls = 8;
-    this.survivalTarget = 600;
-    this.survivalTargetStep = 300;
-    this.survivalBallStep = 0;
+    this.survivalTarget = 500;
+    this.survivalTargetStep = 200;
+    this.survivalBallStep = 1;
     this.survivalBallMin = 3;
     this.survivalScoreMultiplierStart = 1.0;
     this.survivalScoreMultiplierStep = -0.05;
     this.survivalScoreMultiplierMin = 0.7;
     this.survivalScoreMultiplierMax = 1.5;
+    this.survivalPayoutBaseLow = 0.85;
+    this.survivalPayoutBaseHigh = 0.35;
+    this.survivalPayoutStepLow = 0.12;
+    this.survivalPayoutStepHigh = 0.32;
+    this.survivalPayoutBetScale = 1000;
     this.timerDuration = 60;
   }
 }

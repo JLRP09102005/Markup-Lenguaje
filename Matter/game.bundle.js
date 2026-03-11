@@ -323,16 +323,18 @@
   }
 
   class MenuManager {
-    constructor(audio, onPlay, onThemeChange, onModeSelect) {
+    constructor(audio, onPlay, onThemeChange, onModeSelect, getEconomy) {
       this.audio = audio;
       this.onPlay = onPlay;
       this.onThemeChange = onThemeChange;
       this.onModeSelect = onModeSelect;
+      this.getEconomy = getEconomy;
       this.menu = document.getElementById("menu");
       this.mainPanel = document.getElementById("menu-main");
       this.pausePanel = document.getElementById("menu-pause");
       this.optionsPanel = document.getElementById("menu-options");
       this.modesPanel = document.getElementById("menu-modes");
+      this.survivalBetPanel = document.getElementById("menu-survival-bet");
       this.timerPanel = document.getElementById("menu-timer");
       this.playBtn = document.getElementById("menu-play");
       this.optionsBtn = document.getElementById("menu-options-btn");
@@ -341,6 +343,10 @@
       this.modeSurvivalBtn = document.getElementById("mode-survival");
       this.modeTimerBtn = document.getElementById("mode-timer");
       this.modeBackBtn = document.getElementById("mode-back");
+      this.betInput = document.getElementById("bet-input");
+      this.betBankEl = document.getElementById("bet-bank");
+      this.betConfirmBtn = document.getElementById("bet-confirm");
+      this.betBackBtn = document.getElementById("bet-back");
       this.timerSeconds = document.getElementById("timer-seconds");
       this.timerStartBtn = document.getElementById("timer-start");
       this.timerBackBtn = document.getElementById("timer-back");
@@ -363,6 +369,8 @@
       this.optionsPanel.classList.add("is-hidden");
       this.modesPanel.hidden = true;
       this.modesPanel.classList.add("is-hidden");
+      this.survivalBetPanel.hidden = true;
+      this.survivalBetPanel.classList.add("is-hidden");
       this.timerPanel.hidden = true;
       this.timerPanel.classList.add("is-hidden");
       [this.playBtn, this.optionsBtn, this.exitBtn, this.backBtn].forEach((btn) => {
@@ -402,15 +410,26 @@
         await this.audio.playClick();
         this.openMain();
       });
+      this.betBackBtn.addEventListener("click", async () => {
+        await this.audio.playClick();
+        this.openModes();
+      });
       this.timerBackBtn.addEventListener("click", async () => {
         await this.audio.playClick();
         this.openModes();
       });
       this.modeSurvivalBtn.addEventListener("click", async () => {
         await this.audio.playClick();
+        this.openSurvivalBet();
+      });
+      this.betConfirmBtn.addEventListener("click", async () => {
+        await this.audio.playClick();
         await this.audio.startMusic();
         this.menu.classList.add("is-hidden");
-        if (this.onModeSelect) this.onModeSelect("survival");
+        const bet = parseInt(this.betInput.value, 10);
+        if (this.onModeSelect) {
+          this.onModeSelect("survival", { bet: Number.isFinite(bet) ? bet : 0 });
+        }
         this.onPlay();
       });
       this.modeTimerBtn.addEventListener("click", async () => {
@@ -481,11 +500,13 @@
       this.mainPanel.hidden = true;
       this.pausePanel.hidden = true;
       this.optionsPanel.hidden = false;
+      this.survivalBetPanel.hidden = true;
       this.mainPanel.classList.add("is-hidden");
       this.pausePanel.classList.add("is-hidden");
       this.optionsPanel.classList.remove("is-hidden");
       this.modesPanel.hidden = true;
       this.modesPanel.classList.add("is-hidden");
+      this.survivalBetPanel.classList.add("is-hidden");
       this.timerPanel.hidden = true;
       this.timerPanel.classList.add("is-hidden");
     }
@@ -494,11 +515,13 @@
       this.optionsPanel.hidden = true;
       this.pausePanel.hidden = true;
       this.mainPanel.hidden = false;
+      this.survivalBetPanel.hidden = true;
       this.optionsPanel.classList.add("is-hidden");
       this.pausePanel.classList.add("is-hidden");
       this.mainPanel.classList.remove("is-hidden");
       this.modesPanel.hidden = true;
       this.modesPanel.classList.add("is-hidden");
+      this.survivalBetPanel.classList.add("is-hidden");
       this.timerPanel.hidden = true;
       this.timerPanel.classList.add("is-hidden");
     }
@@ -508,11 +531,13 @@
       this.optionsPanel.hidden = true;
       this.modesPanel.hidden = true;
       this.timerPanel.hidden = true;
+      this.survivalBetPanel.hidden = true;
       this.pausePanel.hidden = false;
       this.mainPanel.classList.add("is-hidden");
       this.optionsPanel.classList.add("is-hidden");
       this.modesPanel.classList.add("is-hidden");
       this.timerPanel.classList.add("is-hidden");
+      this.survivalBetPanel.classList.add("is-hidden");
       this.pausePanel.classList.remove("is-hidden");
     }
 
@@ -520,13 +545,37 @@
       this.mainPanel.hidden = true;
       this.pausePanel.hidden = true;
       this.modesPanel.hidden = false;
+      this.survivalBetPanel.hidden = true;
       this.mainPanel.classList.add("is-hidden");
       this.pausePanel.classList.add("is-hidden");
       this.modesPanel.classList.remove("is-hidden");
       this.optionsPanel.hidden = true;
       this.optionsPanel.classList.add("is-hidden");
+      this.survivalBetPanel.classList.add("is-hidden");
       this.timerPanel.hidden = true;
       this.timerPanel.classList.add("is-hidden");
+    }
+
+    openSurvivalBet() {
+      this.modesPanel.hidden = true;
+      this.modesPanel.classList.add("is-hidden");
+      this.survivalBetPanel.hidden = false;
+      this.survivalBetPanel.classList.remove("is-hidden");
+      this.mainPanel.hidden = true;
+      this.mainPanel.classList.add("is-hidden");
+      this.pausePanel.hidden = true;
+      this.pausePanel.classList.add("is-hidden");
+      this.optionsPanel.hidden = true;
+      this.optionsPanel.classList.add("is-hidden");
+      this.timerPanel.hidden = true;
+      this.timerPanel.classList.add("is-hidden");
+      this._syncBetPanel();
+    }
+
+    showSurvivalBet() {
+      this.menu.classList.remove("is-hidden");
+      this._pauseOpen = false;
+      this.openSurvivalBet();
     }
 
     openTimer() {
@@ -538,6 +587,8 @@
       this.mainPanel.classList.add("is-hidden");
       this.pausePanel.hidden = true;
       this.pausePanel.classList.add("is-hidden");
+      this.survivalBetPanel.hidden = true;
+      this.survivalBetPanel.classList.add("is-hidden");
       this.optionsPanel.hidden = true;
       this.optionsPanel.classList.add("is-hidden");
     }
@@ -555,6 +606,25 @@
     hideMenu() {
       this.menu.classList.add("is-hidden");
       this._pauseOpen = false;
+    }
+
+    _syncBetPanel() {
+      const econ = this.getEconomy ? this.getEconomy() : { bank: 0, bet: 0, min: 0, step: 1 };
+      const safeBank = Number.isFinite(econ.bank) ? econ.bank : 0;
+      const baseBet = Number.isFinite(econ.bet) ? econ.bet : 0;
+      const minDefault = Number.isFinite(econ.min) ? econ.min : 0;
+      const stepDefault = Number.isFinite(econ.step) ? econ.step : 1;
+      if (this.betBankEl) this.betBankEl.textContent = safeBank;
+      if (this.betInput) {
+        const min = parseInt(this.betInput.min, 10) || minDefault;
+        const step = parseInt(this.betInput.step, 10) || stepDefault;
+        const max = Math.max(safeBank, 0);
+        this.betInput.max = String(max);
+        const current = parseInt(this.betInput.value, 10) || baseBet || min;
+        const clamped = Math.max(Math.min(current, max), Math.min(min, max));
+        const snapped = Math.round(clamped / step) * step;
+        this.betInput.value = String(Math.max(Math.min(snapped, max), Math.min(min, max)));
+      }
     }
   }
 
@@ -574,15 +644,23 @@
       this.powerUpRadius = 14;
       this.powerUpMin = 3;
       this.powerUpMax = 5;
+      this.bankStart = 1500;
+      this.betMin = 25;
+      this.betStep = 25;
       this.survivalBalls = 8;
-      this.survivalTarget = 600;
-      this.survivalTargetStep = 300;
-      this.survivalBallStep = 0;
+      this.survivalTarget = 500;
+      this.survivalTargetStep = 200;
+      this.survivalBallStep = 1;
       this.survivalBallMin = 3;
       this.survivalScoreMultiplierStart = 1;
       this.survivalScoreMultiplierStep = -0.05;
       this.survivalScoreMultiplierMin = 0.7;
       this.survivalScoreMultiplierMax = 1.5;
+      this.survivalPayoutBaseLow = 0.85;
+      this.survivalPayoutBaseHigh = 0.35;
+      this.survivalPayoutStepLow = 0.12;
+      this.survivalPayoutStepHigh = 0.32;
+      this.survivalPayoutBetScale = 1000;
       this.timerDuration = 60;
     }
   }
@@ -593,6 +671,8 @@
       this.score = 0;
       this.ballsLeft = config.maxBalls;
       this.lastSlot = "-";
+      this.bank = config.bankStart;
+      this.bet = config.betMin;
     }
     addScore(points) {
       this.score += points;
@@ -629,6 +709,22 @@
       this.hudTimeEl = document.getElementById("hud-time");
       this.dropBtn = document.getElementById("drop");
       this.resetBtn = document.getElementById("reset");
+      this.bankEl = document.getElementById("credit-value");
+      this.betEl = document.getElementById("bet-value");
+      this.betMinusBtn = document.getElementById("bet-minus");
+      this.betPlusBtn = document.getElementById("bet-plus");
+      this.betDisplayEl = document.getElementById("bet-display");
+      this.payoutEl = document.getElementById("payout-display");
+      this.prizeNoteEl = document.getElementById("prize-note");
+      this.statEls = {
+        score: Array.from(document.querySelectorAll('[data-stat="score"]')),
+        balls: Array.from(document.querySelectorAll('[data-stat="balls"]')),
+        last: Array.from(document.querySelectorAll('[data-stat="last"]')),
+        mode: Array.from(document.querySelectorAll('[data-stat="mode"]')),
+        round: Array.from(document.querySelectorAll('[data-stat="round"]')),
+        target: Array.from(document.querySelectorAll('[data-stat="target"]')),
+        time: Array.from(document.querySelectorAll('[data-stat="time"]')),
+      };
     }
     bind(onDrop, onReset) {
       this.dropBtn.addEventListener("click", onDrop);
@@ -640,15 +736,39 @@
         if (this.audio) this.audio.playClick();
       });
     }
+    bindEconomy(onBetDown, onBetUp) {
+      if (this.betMinusBtn) {
+        this.betMinusBtn.addEventListener("click", onBetDown);
+        this.betMinusBtn.addEventListener("mouseenter", () => {
+          if (this.audio) this.audio.playClick();
+        });
+      }
+      if (this.betPlusBtn) {
+        this.betPlusBtn.addEventListener("click", onBetUp);
+        this.betPlusBtn.addEventListener("mouseenter", () => {
+          if (this.audio) this.audio.playClick();
+        });
+      }
+    }
     render(meta) {
-      this.scoreEl.textContent = this.state.score;
-      this.ballsEl.textContent = meta && meta.balls ? meta.balls : this.state.ballsLeft;
-      this.lastSlotEl.textContent = this.state.lastSlot;
-      this.hudScoreEl.textContent = this.state.score;
-      this.hudBallsEl.textContent = meta && meta.balls ? meta.balls : this.state.ballsLeft;
-      this.hudLastEl.textContent = this.state.lastSlot;
+      if (this.scoreEl) this.scoreEl.textContent = this.state.score;
+      if (this.ballsEl) {
+        this.ballsEl.textContent = meta && meta.balls ? meta.balls : this.state.ballsLeft;
+      }
+      if (this.lastSlotEl) this.lastSlotEl.textContent = this.state.lastSlot;
+      if (this.hudScoreEl) this.hudScoreEl.textContent = this.state.score;
+      if (this.hudBallsEl) {
+        this.hudBallsEl.textContent = meta && meta.balls ? meta.balls : this.state.ballsLeft;
+      }
+      if (this.hudLastEl) this.hudLastEl.textContent = this.state.lastSlot;
+      this._setStat("score", this.state.score);
+      this._setStat("balls", meta && meta.balls ? meta.balls : this.state.ballsLeft);
+      this._setStat("last", this.state.lastSlot);
+      if (this.bankEl) this.bankEl.textContent = this.state.bank;
+      if (this.betEl) this.betEl.textContent = this.state.bet;
+      if (this.betDisplayEl) this.betDisplayEl.textContent = this.state.bet;
       if (meta) {
-        const { mode, round, target, timeLeft } = meta;
+        const { mode, round, target, timeLeft, payout } = meta;
         if (this.modeEl) this.modeEl.textContent = mode ?? "-";
         if (this.roundEl) this.roundEl.textContent = round ?? "-";
         if (this.targetEl) this.targetEl.textContent = target ?? "-";
@@ -657,7 +777,27 @@
         if (this.hudRoundEl) this.hudRoundEl.textContent = round ?? "-";
         if (this.hudTargetEl) this.hudTargetEl.textContent = target ?? "-";
         if (this.hudTimeEl) this.hudTimeEl.textContent = timeLeft ?? "-";
+        this._setStat("mode", mode ?? "-");
+        this._setStat("round", round ?? "-");
+        this._setStat("target", target ?? "-");
+        this._setStat("time", timeLeft ?? "-");
+        if (this.payoutEl) this.payoutEl.textContent = payout ?? 0;
+        if (this.prizeNoteEl) {
+          if (mode === "TIMER") {
+            this.prizeNoteEl.textContent = "Sin premios en Timer";
+          } else {
+            this.prizeNoteEl.textContent = "Solo en modo Survival";
+          }
+        }
       }
+    }
+
+    _setStat(key, value) {
+      const list = this.statEls[key];
+      if (!list) return;
+      list.forEach((el) => {
+        el.textContent = value;
+      });
     }
   }
 
@@ -866,7 +1006,12 @@
       this.timerDuration = options.duration || this.config.timerDuration;
       this.timeLeft = this.timerDuration;
       this._timerEnded = false;
+      if (Number.isFinite(options.bet)) {
+        this.state.bet = options.bet;
+      }
       if (mode === "survival") {
+        this._ensureBetAffordable();
+        this._applySurvivalBuyIn();
         this.state.ballsLeft = this._getSurvivalBalls();
         this.state.score = 0;
       } else if (mode === "timer") {
@@ -884,6 +1029,10 @@
       Render.run(this.render);
       Runner.run(this.runner, this.engine);
       this.ui.bind(() => this.dropBall(), () => this.reset());
+      this.ui.bindEconomy(
+        () => this.adjustBet(-1),
+        () => this.adjustBet(1)
+      );
       this.slotLabels.render();
       this.ui.render(this._getMeta());
       if (!this._keyBound) {
@@ -930,6 +1079,31 @@
       this.applyTheme();
       this.slotLabels.render();
       this.ui.render(this._getMeta());
+    }
+
+    adjustBet(direction) {
+      const step = this.config.betStep;
+      const maxBet = Math.max(this.state.bank, 0);
+      const minBet = Math.min(this.config.betMin, maxBet);
+      const next = this.state.bet + direction * step;
+      this.state.bet = Math.max(minBet, Math.min(maxBet, next));
+      this.ui.render(this._getMeta());
+    }
+
+    _ensureBetAffordable() {
+      const maxBet = Math.max(this.state.bank, 0);
+      const minBet = Math.min(this.config.betMin, maxBet);
+      if (this.state.bet > maxBet) this.state.bet = maxBet;
+      if (this.state.bet < minBet) this.state.bet = minBet;
+    }
+
+    _applySurvivalBuyIn() {
+      if (this.state.bet <= 0) return;
+      if (this.state.bank >= this.state.bet) {
+        this.state.bank -= this.state.bet;
+      } else {
+        this.state.bet = 0;
+      }
     }
     _spawnScoreFx(slotIndex, points) {
       const slotWidth = this.config.width / this.config.slotCount;
@@ -1053,6 +1227,7 @@
         round: this.mode === "survival" ? this.round : "-",
         target: this.mode === "survival" ? this.target : "-",
         timeLeft: this.mode === "timer" ? `${this.timeLeft}s` : "-",
+        payout: this.mode === "survival" ? this._getSurvivalPayout() : 0,
         balls,
       };
     }
@@ -1060,6 +1235,7 @@
     _checkModeProgress() {
       if (this.mode !== "survival") return;
       if (this.state.score >= this.target) {
+        this._paySurvivalRound();
         this.round += 1;
         this.target += this.config.survivalTargetStep;
         this.state.ballsLeft = this._getSurvivalBalls();
@@ -1078,6 +1254,24 @@
       this.state.score = 0;
       this.state.ballsLeft = this._getSurvivalBalls();
       this.reset();
+    }
+
+    _paySurvivalRound() {
+      const payout = this._getSurvivalPayout();
+      this.state.bank += payout;
+    }
+
+    _getSurvivalPayout() {
+      const scale = Math.max(this.config.survivalPayoutBetScale, 1);
+      const betFactor = Math.min(Math.max(this.state.bet / scale, 0), 1);
+      const base =
+        this.config.survivalPayoutBaseLow +
+        (this.config.survivalPayoutBaseHigh - this.config.survivalPayoutBaseLow) * betFactor;
+      const step =
+        this.config.survivalPayoutStepLow +
+        (this.config.survivalPayoutStepHigh - this.config.survivalPayoutStepLow) * betFactor;
+      const multiplier = base + (this.round - 1) * step;
+      return Math.round(this.state.bet * multiplier);
     }
 
     _getSurvivalBalls() {
@@ -1170,7 +1364,13 @@
     audio,
     () => game.start(),
     () => game.applyTheme(),
-    (mode, options) => game.setMode(mode, options)
+    (mode, options) => game.setMode(mode, options),
+    () => ({
+      bank: game.state.bank,
+      bet: game.state.bet,
+      min: game.config.betMin,
+      step: game.config.betStep,
+    })
   );
   const results = new ResultsManager(
     () => menu.showTimer(),
@@ -1178,13 +1378,7 @@
   );
   results.init();
   const survivalResults = new SurvivalResultsManager(
-    async () => {
-      await audio.startMusic();
-      menu.hideMenu();
-      game.setMode("survival");
-      game.reset();
-      game.start();
-    },
+    () => menu.showSurvivalBet(),
     () => menu.showMenu()
   );
   survivalResults.init();

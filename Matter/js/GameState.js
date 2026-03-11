@@ -4,6 +4,8 @@ export class GameState {
     this.score = 0;
     this.ballsLeft = config.maxBalls;
     this.lastSlot = "-";
+    this.bank = config.bankStart;
+    this.bet = config.betMin;
   }
   addScore(points) {
     this.score += points;

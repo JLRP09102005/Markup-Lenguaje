@@ -1,14 +1,16 @@
 export class MenuManager {
-  constructor(audio, onPlay, onThemeChange, onModeSelect) {
+  constructor(audio, onPlay, onThemeChange, onModeSelect, getEconomy) {
     this.audio = audio;
     this.onPlay = onPlay;
     this.onThemeChange = onThemeChange;
     this.onModeSelect = onModeSelect;
+    this.getEconomy = getEconomy;
     this.menu = document.getElementById("menu");
     this.mainPanel = document.getElementById("menu-main");
     this.pausePanel = document.getElementById("menu-pause");
     this.optionsPanel = document.getElementById("menu-options");
     this.modesPanel = document.getElementById("menu-modes");
+    this.survivalBetPanel = document.getElementById("menu-survival-bet");
     this.timerPanel = document.getElementById("menu-timer");
     this.playBtn = document.getElementById("menu-play");
     this.optionsBtn = document.getElementById("menu-options-btn");
@@ -17,6 +19,10 @@ export class MenuManager {
     this.modeSurvivalBtn = document.getElementById("mode-survival");
     this.modeTimerBtn = document.getElementById("mode-timer");
     this.modeBackBtn = document.getElementById("mode-back");
+    this.betInput = document.getElementById("bet-input");
+    this.betBankEl = document.getElementById("bet-bank");
+    this.betConfirmBtn = document.getElementById("bet-confirm");
+    this.betBackBtn = document.getElementById("bet-back");
     this.timerSeconds = document.getElementById("timer-seconds");
     this.timerStartBtn = document.getElementById("timer-start");
     this.timerBackBtn = document.getElementById("timer-back");
@@ -39,6 +45,8 @@ export class MenuManager {
     this.optionsPanel.classList.add("is-hidden");
     this.modesPanel.hidden = true;
     this.modesPanel.classList.add("is-hidden");
+    this.survivalBetPanel.hidden = true;
+    this.survivalBetPanel.classList.add("is-hidden");
     this.timerPanel.hidden = true;
     this.timerPanel.classList.add("is-hidden");
     [this.playBtn, this.optionsBtn, this.exitBtn, this.backBtn].forEach((btn) => {
@@ -78,15 +86,26 @@ export class MenuManager {
       await this.audio.playClick();
       this.openMain();
     });
+    this.betBackBtn.addEventListener("click", async () => {
+      await this.audio.playClick();
+      this.openModes();
+    });
     this.timerBackBtn.addEventListener("click", async () => {
       await this.audio.playClick();
       this.openModes();
     });
     this.modeSurvivalBtn.addEventListener("click", async () => {
       await this.audio.playClick();
+      this.openSurvivalBet();
+    });
+    this.betConfirmBtn.addEventListener("click", async () => {
+      await this.audio.playClick();
       await this.audio.startMusic();
       this.menu.classList.add("is-hidden");
-      if (this.onModeSelect) this.onModeSelect("survival");
+      const bet = parseInt(this.betInput.value, 10);
+      if (this.onModeSelect) {
+        this.onModeSelect("survival", { bet: Number.isFinite(bet) ? bet : 0 });
+      }
       this.onPlay();
     });
     this.modeTimerBtn.addEventListener("click", async () => {
@@ -157,11 +176,13 @@ export class MenuManager {
     this.mainPanel.hidden = true;
     this.pausePanel.hidden = true;
     this.optionsPanel.hidden = false;
+    this.survivalBetPanel.hidden = true;
     this.mainPanel.classList.add("is-hidden");
     this.pausePanel.classList.add("is-hidden");
     this.optionsPanel.classList.remove("is-hidden");
     this.modesPanel.hidden = true;
     this.modesPanel.classList.add("is-hidden");
+    this.survivalBetPanel.classList.add("is-hidden");
     this.timerPanel.hidden = true;
     this.timerPanel.classList.add("is-hidden");
   }
@@ -170,11 +191,13 @@ export class MenuManager {
     this.optionsPanel.hidden = true;
     this.pausePanel.hidden = true;
     this.mainPanel.hidden = false;
+    this.survivalBetPanel.hidden = true;
     this.optionsPanel.classList.add("is-hidden");
     this.pausePanel.classList.add("is-hidden");
     this.mainPanel.classList.remove("is-hidden");
     this.modesPanel.hidden = true;
     this.modesPanel.classList.add("is-hidden");
+    this.survivalBetPanel.classList.add("is-hidden");
     this.timerPanel.hidden = true;
     this.timerPanel.classList.add("is-hidden");
   }
@@ -184,11 +207,13 @@ export class MenuManager {
     this.optionsPanel.hidden = true;
     this.modesPanel.hidden = true;
     this.timerPanel.hidden = true;
+    this.survivalBetPanel.hidden = true;
     this.pausePanel.hidden = false;
     this.mainPanel.classList.add("is-hidden");
     this.optionsPanel.classList.add("is-hidden");
     this.modesPanel.classList.add("is-hidden");
     this.timerPanel.classList.add("is-hidden");
+    this.survivalBetPanel.classList.add("is-hidden");
     this.pausePanel.classList.remove("is-hidden");
   }
 
@@ -196,13 +221,37 @@ export class MenuManager {
     this.mainPanel.hidden = true;
     this.pausePanel.hidden = true;
     this.modesPanel.hidden = false;
+    this.survivalBetPanel.hidden = true;
     this.mainPanel.classList.add("is-hidden");
     this.pausePanel.classList.add("is-hidden");
     this.modesPanel.classList.remove("is-hidden");
     this.optionsPanel.hidden = true;
     this.optionsPanel.classList.add("is-hidden");
+    this.survivalBetPanel.classList.add("is-hidden");
     this.timerPanel.hidden = true;
     this.timerPanel.classList.add("is-hidden");
+  }
+
+  openSurvivalBet() {
+    this.modesPanel.hidden = true;
+    this.modesPanel.classList.add("is-hidden");
+    this.survivalBetPanel.hidden = false;
+    this.survivalBetPanel.classList.remove("is-hidden");
+    this.mainPanel.hidden = true;
+    this.mainPanel.classList.add("is-hidden");
+    this.pausePanel.hidden = true;
+    this.pausePanel.classList.add("is-hidden");
+    this.optionsPanel.hidden = true;
+    this.optionsPanel.classList.add("is-hidden");
+    this.timerPanel.hidden = true;
+    this.timerPanel.classList.add("is-hidden");
+    this._syncBetPanel();
+  }
+
+  showSurvivalBet() {
+    this.menu.classList.remove("is-hidden");
+    this._pauseOpen = false;
+    this.openSurvivalBet();
   }
 
   openTimer() {
@@ -214,6 +263,8 @@ export class MenuManager {
     this.mainPanel.classList.add("is-hidden");
     this.pausePanel.hidden = true;
     this.pausePanel.classList.add("is-hidden");
+    this.survivalBetPanel.hidden = true;
+    this.survivalBetPanel.classList.add("is-hidden");
     this.optionsPanel.hidden = true;
     this.optionsPanel.classList.add("is-hidden");
   }
@@ -233,5 +284,24 @@ export class MenuManager {
   hideMenu() {
     this.menu.classList.add("is-hidden");
     this._pauseOpen = false;
+  }
+
+  _syncBetPanel() {
+    const econ = this.getEconomy ? this.getEconomy() : { bank: 0, bet: 0, min: 0, step: 1 };
+    const safeBank = Number.isFinite(econ.bank) ? econ.bank : 0;
+    const baseBet = Number.isFinite(econ.bet) ? econ.bet : 0;
+    const minDefault = Number.isFinite(econ.min) ? econ.min : 0;
+    const stepDefault = Number.isFinite(econ.step) ? econ.step : 1;
+    if (this.betBankEl) this.betBankEl.textContent = safeBank;
+    if (this.betInput) {
+      const min = parseInt(this.betInput.min, 10) || minDefault;
+      const step = parseInt(this.betInput.step, 10) || stepDefault;
+      const max = Math.max(safeBank, 0);
+      this.betInput.max = String(max);
+      const current = parseInt(this.betInput.value, 10) || baseBet || min;
+      const clamped = Math.max(Math.min(current, max), Math.min(min, max));
+      const snapped = Math.round(clamped / step) * step;
+      this.betInput.value = String(Math.max(Math.min(snapped, max), Math.min(min, max)));
+    }
   }
 }

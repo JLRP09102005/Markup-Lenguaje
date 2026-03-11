@@ -64,7 +64,12 @@ export class Game {
     this.timerDuration = options.duration || this.config.timerDuration;
     this.timeLeft = this.timerDuration;
     this._timerEnded = false;
+    if (Number.isFinite(options.bet)) {
+      this.state.bet = options.bet;
+    }
     if (mode === "survival") {
+      this._ensureBetAffordable();
+      this._applySurvivalBuyIn();
       this.state.ballsLeft = this._getSurvivalBalls();
       this.state.score = 0;
     } else if (mode === "timer") {
@@ -82,6 +87,10 @@ export class Game {
     this.Matter.Render.run(this.render);
     this.Matter.Runner.run(this.runner, this.engine);
     this.ui.bind(() => this.dropBall(), () => this.reset());
+    this.ui.bindEconomy(
+      () => this.adjustBet(-1),
+      () => this.adjustBet(1)
+    );
     this.slotLabels.render();
     this.ui.render(this._getMeta());
     if (!this._keyBound) {
@@ -133,6 +142,31 @@ export class Game {
     this.applyTheme();
     this.slotLabels.render();
     this.ui.render(this._getMeta());
+  }
+
+  adjustBet(direction) {
+    const step = this.config.betStep;
+    const maxBet = Math.max(this.state.bank, 0);
+    const minBet = Math.min(this.config.betMin, maxBet);
+    const next = this.state.bet + direction * step;
+    this.state.bet = Math.max(minBet, Math.min(maxBet, next));
+    this.ui.render(this._getMeta());
+  }
+
+  _ensureBetAffordable() {
+    const maxBet = Math.max(this.state.bank, 0);
+    const minBet = Math.min(this.config.betMin, maxBet);
+    if (this.state.bet > maxBet) this.state.bet = maxBet;
+    if (this.state.bet < minBet) this.state.bet = minBet;
+  }
+
+  _applySurvivalBuyIn() {
+    if (this.state.bet <= 0) return;
+    if (this.state.bank >= this.state.bet) {
+      this.state.bank -= this.state.bet;
+    } else {
+      this.state.bet = 0;
+    }
   }
 
   _isMenuOpen() {
@@ -257,6 +291,7 @@ export class Game {
       round: this.mode === "survival" ? this.round : "-",
       target: this.mode === "survival" ? this.target : "-",
       timeLeft: this.mode === "timer" ? `${this.timeLeft}s` : "-",
+      payout: this.mode === "survival" ? this._getSurvivalPayout() : 0,
       balls,
     };
   }
@@ -264,6 +299,7 @@ export class Game {
   _checkModeProgress() {
     if (this.mode !== "survival") return;
     if (this.state.score >= this.target) {
+      this._paySurvivalRound();
       this.round += 1;
       this.target += this.config.survivalTargetStep;
       this.state.ballsLeft = this._getSurvivalBalls();
@@ -272,6 +308,24 @@ export class Game {
     } else if (this.state.ballsLeft === 0 && this.activeBalls.size === 0) {
       this._loseSurvival();
     }
+  }
+
+  _paySurvivalRound() {
+    const payout = this._getSurvivalPayout();
+    this.state.bank += payout;
+  }
+
+  _getSurvivalPayout() {
+    const scale = Math.max(this.config.survivalPayoutBetScale, 1);
+    const betFactor = Math.min(Math.max(this.state.bet / scale, 0), 1);
+    const base =
+      this.config.survivalPayoutBaseLow +
+      (this.config.survivalPayoutBaseHigh - this.config.survivalPayoutBaseLow) * betFactor;
+    const step =
+      this.config.survivalPayoutStepLow +
+      (this.config.survivalPayoutStepHigh - this.config.survivalPayoutStepLow) * betFactor;
+    const multiplier = base + (this.round - 1) * step;
+    return Math.round(this.state.bet * multiplier);
   }
 
   _loseSurvival() {

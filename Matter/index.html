@@ -13,40 +13,56 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="layout">
-      <aside class="panel">
-        <h1>Pachinko</h1>
-        <p>Juego base en Matter.js preparado para menus, habilidades y objetos extra.</p>
-        <div class="stats">
-          <div class="stat">Puntos: <span id="score">0</span></div>
-          <div class="stat">Bolas: <span id="balls">5</span></div>
-          <div class="stat">Ultima ranura: <span id="last-slot">-</span></div>
-          <div class="stat">Modo: <span id="mode">-</span></div>
-          <div class="stat">Ronda: <span id="round">-</span></div>
-          <div class="stat">Objetivo: <span id="target">-</span></div>
-          <div class="stat">Tiempo: <span id="time-left">-</span></div>
+    <div class="layout casino">
+      <header class="top-bar">
+        <div class="logo">
+          <span class="logo-top">PACHINKO</span>
+          <span class="logo-sub">Casino Edition</span>
         </div>
+        <div class="marquee">WIN UP TO 5000X · PACHINKO ELITE</div>
+        <div class="top-stats">
+          <div class="stat-pill">Puntos: <span data-stat="score">0</span></div>
+          <div class="stat-pill">Bolas: <span data-stat="balls">5</span></div>
+          <div class="stat-pill">Tiempo: <span data-stat="time">-</span></div>
+        </div>
+      </header>
+      <aside class="panel side-panel left-panel">
+        <h2 class="panel-title">Premios</h2>
+        <div class="stat">Apuesta: <span id="bet-display">0</span></div>
+        <div class="stat">Ganas por ronda: <span id="payout-display">0</span></div>
+        <div class="prize-note" id="prize-note">Solo en modo Survival</div>
+      </aside>
+      <main class="canvas-wrap casino-board">
+        <div class="board-frame">
+          <div id="game">
+            <div class="slot-labels" id="slot-labels"></div>
+            <div class="score-fx" id="score-fx"></div>
+          </div>
+        </div>
+      </main>
+      <aside class="panel side-panel right-panel">
+        <h2 class="panel-title">Estado</h2>
+        <div class="stat">Puntos: <span data-stat="score">0</span></div>
+        <div class="stat">Bolas: <span data-stat="balls">5</span></div>
+        <div class="stat">Ultima: <span data-stat="last">-</span></div>
+        <div class="stat">Modo: <span data-stat="mode">-</span></div>
+        <div class="stat">Ronda: <span data-stat="round">-</span></div>
+        <div class="stat">Objetivo: <span data-stat="target">-</span></div>
+        <div class="stat">Tiempo: <span data-stat="time">-</span></div>
         <div class="controls">
           <button id="drop">Soltar bola</button>
           <button id="reset" class="secondary">Reiniciar</button>
         </div>
       </aside>
-      <main class="canvas-wrap">
-        <div id="game">
-          <div class="slot-labels" id="slot-labels"></div>
-          <div class="score-fx" id="score-fx"></div>
+      <footer class="bottom-bar">
+        <div class="credit">CREDIT: <span id="credit-value">0</span></div>
+        <div class="action">PLACE YOUR BETS!</div>
+        <div class="bet-controls">
+          <button class="menu-btn ghost" id="bet-minus">-</button>
+          <div class="bet-value">BET <span id="bet-value">0</span></div>
+          <button class="menu-btn ghost" id="bet-plus">+</button>
         </div>
-        <div class="hud" aria-hidden="true">
-          <div class="hud-title">Estado</div>
-          <div class="hud-line">Puntos: <span id="hud-score">0</span></div>
-          <div class="hud-line">Bolas: <span id="hud-balls">5</span></div>
-          <div class="hud-line">Ultima: <span id="hud-last">-</span></div>
-          <div class="hud-line">Modo: <span id="hud-mode">-</span></div>
-          <div class="hud-line">Ronda: <span id="hud-round">-</span></div>
-          <div class="hud-line">Objetivo: <span id="hud-target">-</span></div>
-          <div class="hud-line">Tiempo: <span id="hud-time">-</span></div>
-        </div>
-      </main>
+      </footer>
     </div>
     <div class="menu-overlay" id="menu">
       <div class="menu-float">
@@ -72,6 +88,16 @@
         <button class="menu-btn" id="mode-survival">Survival</button>
         <button class="menu-btn secondary" id="mode-timer">Timer</button>
         <button class="menu-btn ghost" id="mode-back">Volver</button>
+      </div>
+      <div class="menu-card" id="menu-survival-bet" hidden>
+        <h2>Survival - Apuesta</h2>
+        <div class="stat">Credito disponible: <span id="bet-bank">0</span></div>
+        <label class="opt-row">
+          <span>Apuesta</span>
+          <input id="bet-input" type="number" min="25" step="25" value="25" />
+        </label>
+        <button class="menu-btn" id="bet-confirm">Jugar</button>
+        <button class="menu-btn ghost" id="bet-back">Volver</button>
       </div>
       <div class="menu-card" id="menu-timer" hidden>
         <h2>Timer</h2>
