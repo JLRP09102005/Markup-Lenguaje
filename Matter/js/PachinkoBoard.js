@@ -44,6 +44,7 @@ export class PachinkoBoard {
           isStatic: true,
           render: { fillStyle: colors.pin || "#00f0ff" },
         });
+        pin.label = "pin";
         this.pins.push(pin);
       }
     }

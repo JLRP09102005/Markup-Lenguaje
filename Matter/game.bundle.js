@@ -663,6 +663,10 @@
       this.height = 960;
       this.gravity = 1.1;
       this.ballRadius = 12;
+      this.ballMinRadius = 6;
+      this.ballRestitution = 0.6;
+      this.ballFriction = 0.01;
+      this.ballDensity = 0.002;
       this.maxBalls = 5;
       this.pinRadius = 6;
       this.pinRows = 10;
@@ -676,9 +680,52 @@
       this.powerUpTypes = [
         { id: "double", weight: 1 },
         { id: "shrink", weight: 1 },
+        { id: "magnet", weight: 0.4 },
+        { id: "repulsor", weight: 1 },
+        { id: "slowmo", weight: 1 },
+        { id: "turbo", weight: 1 },
+        { id: "shield", weight: 1 },
+        { id: "multiplier", weight: 1 },
+        { id: "goldpin", weight: 1 },
+        { id: "teleport", weight: 1 },
+        { id: "ghost", weight: 1 },
+        { id: "bounce", weight: 1 },
+        { id: "split", weight: 1 },
+        { id: "brake", weight: 1 },
+        { id: "lucky", weight: 1 },
+        { id: "time", weight: 1 },
+        { id: "insurance", weight: 1 },
       ];
+      this.powerUpDurations = {
+        magnet: 4500,
+        repulsor: 8000,
+        slowmo: 6000,
+        turbo: 6000,
+        shield: 8000,
+        multiplier: 8000,
+        goldpin: 8000,
+        teleport: 8000,
+        ghost: 8000,
+        bounce: 8000,
+        split: 8000,
+        brake: 8000,
+        lucky: 8000,
+      };
       this.shrinkFactor = 0.7;
-      this.ballMinRadius = 6;
+      this.magnetForce = 0.0006;
+      this.repulsorForce = 0.0005;
+      this.edgeMargin = 120;
+      this.slowMoFactor = 0.7;
+      this.turboFactor = 1.3;
+      this.bounceFactor = 1.35;
+      this.brakeFactor = 0.7;
+      this.scoreMultiplier = 2;
+      this.luckySlotMultiplier = 3;
+      this.goldenPinCount = 8;
+      this.goldenPinBonus = 20;
+      this.timeBonusSeconds = 8;
+      this.timePowerScoreBonus = 150;
+      this.insuranceBalls = 2;
       this.bankStart = 1500;
       this.betMin = 25;
       this.betStep = 25;
@@ -942,6 +989,7 @@
             isStatic: true,
             render: { fillStyle: colors.pin || "#00f0ff" },
           });
+          pin.label = "pin";
           this.pins.push(pin);
         }
       }
@@ -971,9 +1019,9 @@
     createBall(x, y) {
       const colors = this.getColors ? this.getColors() : {};
       return Bodies.circle(x, y, this.config.ballRadius, {
-        restitution: 0.6,
-        friction: 0.01,
-        density: 0.002,
+        restitution: this.config.ballRestitution,
+        friction: this.config.ballFriction,
+        density: this.config.ballDensity,
         render: { fillStyle: colors.ball || "#ff4bd8" },
       });
     }
@@ -1091,6 +1139,27 @@
       this.scoreFx = document.getElementById("score-fx");
       this.powerUps = [];
       this.activeBalls = new Set();
+      this.effects = new Map();
+      this.effectFlags = {
+        shield: false,
+        multiplier: false,
+        goldpin: false,
+        teleport: false,
+        ghost: false,
+        bounce: false,
+        split: false,
+        brake: false,
+        lucky: false,
+        magnet: false,
+        repulsor: false,
+        slowmo: false,
+        turbo: false,
+      };
+      this.scoreMultiplier = 1;
+      this.luckySlotIndex = null;
+      this.goldenPins = new Set();
+      this.insuranceCharges = 0;
+      this._baseGravity = this.config.gravity;
       this.mode = null;
       this.round = 1;
       this.target = this.config.survivalTarget;
@@ -1104,6 +1173,7 @@
       this._loadEconomy();
     }
     setMode(mode, options = {}) {
+      this._clearEffects();
       this.mode = mode;
       this.round = 1;
       this.target = this.config.survivalTarget;
@@ -1161,6 +1231,7 @@
       const x = margin + Math.random() * (this.config.width - margin * 2);
       const y = 40;
       const ball = this.ballFactory.createBall(x, y);
+      this._applyBallModifiers(ball);
       this.activeBalls.add(ball);
       World.add(this.engine.world, ball);
       if (this.audio) this.audio.playDrop();
@@ -1168,6 +1239,7 @@
     }
     reset() {
       if (this._isMenuOpen()) return;
+      this._clearEffects();
       Composite.clear(this.engine.world, false);
       this.activeBalls.clear();
       this.state.reset();
@@ -1253,10 +1325,20 @@
       ball.plugin.lastDuped = now;
 
       const clone = this.ballFactory.createBall(ball.position.x + 6, ball.position.y - 6);
-      Body.setVelocity(clone, {
-        x: ball.velocity.x + (Math.random() - 0.5) * 2,
-        y: ball.velocity.y - 1.5,
-      });
+      if (this.effectFlags.split) {
+        const dir = Math.random() < 0.5 ? -1 : 1;
+        const speed = Math.max(2, Math.hypot(ball.velocity.x, ball.velocity.y));
+        Body.setVelocity(clone, {
+          x: dir * (2.5 + Math.random() * 1.5),
+          y: -Math.max(2, speed * 0.4),
+        });
+      } else {
+        Body.setVelocity(clone, {
+          x: ball.velocity.x + (Math.random() - 0.5) * 2,
+          y: ball.velocity.y - 1.5,
+        });
+      }
+      this._applyBallModifiers(clone);
       this.activeBalls.add(clone);
       World.add(this.engine.world, clone);
       if (this.audio) this.audio.playPowerUp();
@@ -1276,10 +1358,33 @@
 
     _applyPowerUp(powerUp, ball) {
       if (!powerUp || !ball) return;
-      if (powerUp.type === "shrink") {
-        this._shrinkBall(ball);
-      } else {
-        this._duplicateBall(ball);
+      switch (powerUp.type) {
+        case "double":
+          this._duplicateBall(ball);
+          break;
+        case "shrink":
+          this._shrinkBall(ball);
+          break;
+        case "time":
+          if (this.mode === "timer") {
+            this.timeLeft += this.config.timeBonusSeconds;
+            this.ui.render(this._getMeta());
+          } else {
+            this.state.addScore(this.config.timePowerScoreBonus);
+            this.ui.render(this._getMeta());
+          }
+          break;
+        case "insurance":
+          if (this.mode === "survival") {
+            this.insuranceCharges = 1;
+          } else {
+            this.state.addScore(this.config.timePowerScoreBonus);
+            this.ui.render(this._getMeta());
+          }
+          break;
+        default:
+          this._activateEffect(powerUp.type);
+          break;
       }
     }
     _bindEvents() {
@@ -1288,9 +1393,28 @@
       for (const ball of this.activeBalls) {
         if (ball.position.y > this.config.height + 40) {
           const slotIndex = this.scoreSystem.getSlotIndex(ball.position.x);
-          const basePoints = this.scoreSystem.pointsForSlot(slotIndex);
+          if (
+            this.effectFlags.teleport &&
+            !ball.plugin?.teleported &&
+            this._isLowSlot(slotIndex)
+          ) {
+            if (!ball.plugin) ball.plugin = {};
+            ball.plugin.teleported = true;
+            const margin = this.config.spawnMargin;
+            const x = margin + Math.random() * (this.config.width - margin * 2);
+            Body.setPosition(ball, { x, y: 40 });
+            Body.setVelocity(ball, { x: 0, y: 0 });
+            continue;
+          }
+          let basePoints = this.scoreSystem.pointsForSlot(slotIndex);
+          if (this.effectFlags.shield && this._isLowSlot(slotIndex)) {
+            basePoints = Math.max(basePoints, this.scoreSystem.pointsForSlot(0));
+          }
+          if (this.effectFlags.lucky && this.luckySlotIndex === slotIndex) {
+            basePoints *= this.config.luckySlotMultiplier;
+          }
           const multiplier = this.mode === "survival" ? this._getSurvivalMultiplier() : 1;
-          const points = Math.round(basePoints * multiplier);
+          const points = Math.round(basePoints * multiplier * this.scoreMultiplier);
           this.state.addScore(points);
           this.state.lastSlot = String(slotIndex + 1);
           this._spawnScoreFx(slotIndex, points);
@@ -1326,6 +1450,24 @@
             this._collectPowerUp(powerUp);
           }
           const ball = this.activeBalls.has(a) ? a : this.activeBalls.has(b) ? b : null;
+          const pin = a.label === "pin" ? a : b.label === "pin" ? b : null;
+          if (ball && pin) {
+            if (this.effectFlags.goldpin && this.goldenPins.has(pin)) {
+              const now = this.engine.timing.timestamp;
+              if (!ball.plugin) ball.plugin = {};
+              if (!ball.plugin.lastGoldPin || now - ball.plugin.lastGoldPin > 120) {
+                ball.plugin.lastGoldPin = now;
+                this.state.addScore(this.config.goldenPinBonus);
+                this.ui.render(this._getMeta());
+              }
+            }
+            if (this.effectFlags.brake) {
+              Body.setVelocity(ball, {
+                x: ball.velocity.x * this.config.brakeFactor,
+                y: ball.velocity.y * this.config.brakeFactor,
+              });
+            }
+          }
           if (ball && this.audio) {
             const now = this.engine.timing.timestamp;
             if (!ball.plugin) ball.plugin = {};
@@ -1337,8 +1479,35 @@
         }
       });
 
-      Events.on(this.engine, "beforeUpdate", (event) => {
-        if (this.mode !== "timer") return;
+    Events.on(this.engine, "beforeUpdate", (event) => {
+      this._tickEffects();
+      if (this.effectFlags.magnet || this.effectFlags.repulsor) {
+        const centerX = this.config.width / 2;
+        const centerY = this.config.height / 2;
+        for (const ball of this.activeBalls) {
+          const dx = centerX - ball.position.x;
+          const dy = centerY - ball.position.y;
+          const dist = Math.max(Math.hypot(dx, dy), 1);
+          const nx = dx / dist;
+          const ny = dy / dist;
+          if (this.effectFlags.magnet) {
+            Body.applyForce(ball, ball.position, {
+              x: nx * this.config.magnetForce,
+              y: ny * this.config.magnetForce,
+            });
+          }
+          if (this.effectFlags.repulsor) {
+            const edge = this.config.edgeMargin;
+            if (ball.position.x < edge || ball.position.x > this.config.width - edge) {
+              Body.applyForce(ball, ball.position, {
+                x: nx * this.config.repulsorForce,
+                y: ny * this.config.repulsorForce,
+              });
+            }
+          }
+        }
+      }
+      if (this.mode !== "timer") return;
         if (this._timerEnded) return;
         const delta = event.delta || 16.7;
         this._lastTick += delta;
@@ -1376,13 +1545,19 @@
         this._paySurvivalRound();
         this.round += 1;
         this.target += this.config.survivalTargetStep;
-        this.state.ballsLeft = this._getSurvivalBalls();
-        this.state.score = 0;
-        this.reset();
-      } else if (this.state.ballsLeft === 0 && this.activeBalls.size === 0) {
+      this.state.ballsLeft = this._getSurvivalBalls();
+      this.state.score = 0;
+      this.reset();
+    } else if (this.state.ballsLeft === 0 && this.activeBalls.size === 0) {
+      if (this.insuranceCharges > 0) {
+        this.insuranceCharges = 0;
+        this.state.ballsLeft = Math.max(1, this.config.insuranceBalls);
+        this.ui.render(this._getMeta());
+      } else {
         this._loseSurvival();
       }
     }
+  }
 
     _loseSurvival() {
       const survived = Math.max(0, this.round - 1);
@@ -1469,6 +1644,7 @@
         powerupStroke: styles.getPropertyValue("--powerup-stroke").trim(),
         powerupShrink: styles.getPropertyValue("--powerup-shrink").trim(),
         powerupShrinkStroke: styles.getPropertyValue("--powerup-shrink-stroke").trim(),
+        pinGold: styles.getPropertyValue("--pin-gold").trim(),
       };
     }
 
@@ -1496,6 +1672,12 @@
           powerUp.body.render.strokeStyle = colors.powerupStroke;
         }
       });
+      if (this.effectFlags.goldpin && this.goldenPins.size > 0) {
+        const gold = colors.pinGold || colors.powerup;
+        this.goldenPins.forEach((pin) => {
+          pin.render.fillStyle = gold;
+        });
+      }
     }
 
     _pickPowerUpType() {
@@ -1543,6 +1725,190 @@
         this.powerUps.push(powerUp);
         this.applyTheme();
       }
+    }
+
+    _applyBallModifiers(ball) {
+      const base = this.config.ballRestitution;
+      const factor = this.effectFlags.bounce ? this.config.bounceFactor : 1;
+      ball.restitution = Math.min(0.98, base * factor);
+    }
+
+    _refreshBallPhysics() {
+      this.activeBalls.forEach((ball) => this._applyBallModifiers(ball));
+    }
+
+    _isLowSlot(slotIndex) {
+      return slotIndex > 0 && slotIndex < this.config.slotCount - 1;
+    }
+
+    _activateEffect(type) {
+      const duration = this.config.powerUpDurations[type] || 0;
+      if (!duration) return;
+      const now = this.engine.timing.timestamp;
+      const current = this.effects.get(type);
+      const wasActive = current && current > now;
+      const nextUntil = Math.max(current || 0, now + duration);
+      this.effects.set(type, nextUntil);
+      if (!wasActive) {
+        this._startEffect(type);
+      }
+    }
+
+    _startEffect(type) {
+      switch (type) {
+        case "magnet":
+          this.effectFlags.magnet = true;
+          break;
+        case "repulsor":
+          this.effectFlags.repulsor = true;
+          break;
+        case "slowmo":
+          this.effectFlags.slowmo = true;
+          this._recomputeGravity();
+          break;
+        case "turbo":
+          this.effectFlags.turbo = true;
+          this._recomputeGravity();
+          break;
+        case "shield":
+          this.effectFlags.shield = true;
+          break;
+        case "multiplier":
+          this.effectFlags.multiplier = true;
+          this.scoreMultiplier = this.config.scoreMultiplier;
+          break;
+        case "goldpin":
+          this.effectFlags.goldpin = true;
+          this._setGoldenPins();
+          break;
+        case "teleport":
+          this.effectFlags.teleport = true;
+          break;
+        case "ghost":
+          this.effectFlags.ghost = true;
+          this._setPinsSensor(true);
+          break;
+        case "bounce":
+          this.effectFlags.bounce = true;
+          this._refreshBallPhysics();
+          break;
+        case "split":
+          this.effectFlags.split = true;
+          break;
+        case "brake":
+          this.effectFlags.brake = true;
+          break;
+        case "lucky":
+          this.effectFlags.lucky = true;
+          this.luckySlotIndex = Math.floor(Math.random() * this.config.slotCount);
+          break;
+        default:
+          break;
+      }
+    }
+
+    _endEffect(type) {
+      this.effects.delete(type);
+      switch (type) {
+        case "magnet":
+          this.effectFlags.magnet = false;
+          break;
+        case "repulsor":
+          this.effectFlags.repulsor = false;
+          break;
+        case "slowmo":
+          this.effectFlags.slowmo = false;
+          this._recomputeGravity();
+          break;
+        case "turbo":
+          this.effectFlags.turbo = false;
+          this._recomputeGravity();
+          break;
+        case "shield":
+          this.effectFlags.shield = false;
+          break;
+        case "multiplier":
+          this.effectFlags.multiplier = false;
+          this.scoreMultiplier = 1;
+          break;
+        case "goldpin":
+          this.effectFlags.goldpin = false;
+          this.goldenPins.clear();
+          this.applyTheme();
+          break;
+        case "teleport":
+          this.effectFlags.teleport = false;
+          break;
+        case "ghost":
+          this.effectFlags.ghost = false;
+          this._setPinsSensor(false);
+          break;
+        case "bounce":
+          this.effectFlags.bounce = false;
+          this._refreshBallPhysics();
+          break;
+        case "split":
+          this.effectFlags.split = false;
+          break;
+        case "brake":
+          this.effectFlags.brake = false;
+          break;
+        case "lucky":
+          this.effectFlags.lucky = false;
+          this.luckySlotIndex = null;
+          break;
+        default:
+          break;
+      }
+    }
+
+    _tickEffects() {
+      if (this.effects.size === 0) return;
+      const now = this.engine.timing.timestamp;
+      for (const [type, until] of this.effects) {
+        if (until <= now) {
+          this._endEffect(type);
+        }
+      }
+    }
+
+    _clearEffects() {
+      for (const type of this.effects.keys()) {
+        this._endEffect(type);
+      }
+      this.effects.clear();
+      this.scoreMultiplier = 1;
+      this.luckySlotIndex = null;
+      this.goldenPins.clear();
+      this.insuranceCharges = 0;
+      this._setPinsSensor(false);
+      this._recomputeGravity();
+    }
+
+    _setPinsSensor(sensor) {
+      if (!this.board || !this.board.pins) return;
+      this.board.pins.forEach((pin) => {
+        pin.isSensor = sensor;
+      });
+    }
+
+    _setGoldenPins() {
+      this.goldenPins.clear();
+      const pins = this.board.pins.slice();
+      const count = Math.min(this.config.goldenPinCount, pins.length);
+      for (let i = 0; i < count; i += 1) {
+        const pick = Math.floor(Math.random() * pins.length);
+        const pin = pins.splice(pick, 1)[0];
+        if (pin) this.goldenPins.add(pin);
+      }
+      this.applyTheme();
+    }
+
+    _recomputeGravity() {
+      let factor = 1;
+      if (this.effectFlags.slowmo) factor *= this.config.slowMoFactor;
+      if (this.effectFlags.turbo) factor *= this.config.turboFactor;
+      this.engine.gravity.y = this._baseGravity * factor;
     }
   }
 

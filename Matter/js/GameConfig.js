@@ -4,6 +4,10 @@ export class GameConfig {
     this.height = 960;
     this.gravity = 1.1;
     this.ballRadius = 12;
+    this.ballMinRadius = 6;
+    this.ballRestitution = 0.6;
+    this.ballFriction = 0.01;
+    this.ballDensity = 0.002;
     this.maxBalls = 5;
     this.pinRadius = 6;
     this.pinRows = 10;
@@ -17,9 +21,52 @@ export class GameConfig {
     this.powerUpTypes = [
       { id: "double", weight: 1 },
       { id: "shrink", weight: 1 },
+      { id: "magnet", weight: 0.4 },
+      { id: "repulsor", weight: 1 },
+      { id: "slowmo", weight: 1 },
+      { id: "turbo", weight: 1 },
+      { id: "shield", weight: 1 },
+      { id: "multiplier", weight: 1 },
+      { id: "goldpin", weight: 1 },
+      { id: "teleport", weight: 1 },
+      { id: "ghost", weight: 1 },
+      { id: "bounce", weight: 1 },
+      { id: "split", weight: 1 },
+      { id: "brake", weight: 1 },
+      { id: "lucky", weight: 1 },
+      { id: "time", weight: 1 },
+      { id: "insurance", weight: 1 },
     ];
+    this.powerUpDurations = {
+      magnet: 4500,
+      repulsor: 8000,
+      slowmo: 6000,
+      turbo: 6000,
+      shield: 8000,
+      multiplier: 8000,
+      goldpin: 8000,
+      teleport: 8000,
+      ghost: 8000,
+      bounce: 8000,
+      split: 8000,
+      brake: 8000,
+      lucky: 8000,
+    };
     this.shrinkFactor = 0.7;
-    this.ballMinRadius = 6;
+    this.magnetForce = 0.0006;
+    this.repulsorForce = 0.0005;
+    this.edgeMargin = 120;
+    this.slowMoFactor = 0.7;
+    this.turboFactor = 1.3;
+    this.bounceFactor = 1.35;
+    this.brakeFactor = 0.7;
+    this.scoreMultiplier = 2;
+    this.luckySlotMultiplier = 3;
+    this.goldenPinCount = 8;
+    this.goldenPinBonus = 20;
+    this.timeBonusSeconds = 8;
+    this.timePowerScoreBonus = 150;
+    this.insuranceBalls = 2;
     this.bankStart = 1500;
     this.betMin = 25;
     this.betStep = 25;
