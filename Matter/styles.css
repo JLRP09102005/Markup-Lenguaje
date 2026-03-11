@@ -126,6 +126,9 @@ body {
   text-transform: uppercase;
   letter-spacing: 1px;
 }
+.credit-float {
+  position: static;
+}
 .menu-btn.small {
   padding: 6px 10px;
   font-size: 11px;

@@ -685,11 +685,11 @@
       this.survivalScoreMultiplierStep = -0.05;
       this.survivalScoreMultiplierMin = 0.7;
       this.survivalScoreMultiplierMax = 1.5;
-      this.survivalPayoutBaseLow = 0.85;
-      this.survivalPayoutBaseHigh = 0.35;
-      this.survivalPayoutStepLow = 0.12;
-      this.survivalPayoutStepHigh = 0.32;
-      this.survivalPayoutBetScale = 1000;
+      this.survivalPayoutBaseLow = 0.6;
+      this.survivalPayoutBaseHigh = 0.25;
+      this.survivalPayoutStepLow = 0.08;
+      this.survivalPayoutStepHigh = 0.2;
+      this.survivalPayoutBetScale = 1500;
       this.timerDuration = 60;
     }
   }
@@ -739,6 +739,7 @@
       this.dropBtn = document.getElementById("drop");
       this.resetBtn = document.getElementById("reset");
       this.creditTopEl = document.getElementById("credit-top");
+      this.creditFloatEl = document.getElementById("credit-float-value");
       this.paymentOpenBtn = document.getElementById("open-payment");
       this.paymentOpenMenuBtn = document.getElementById("menu-add-credits");
       this.paymentModal = document.getElementById("payment-modal");
@@ -839,6 +840,7 @@
       this._setStat("balls", meta && meta.balls ? meta.balls : this.state.ballsLeft);
       this._setStat("last", this.state.lastSlot);
       if (this.creditTopEl) this.creditTopEl.textContent = this.state.bank;
+      if (this.creditFloatEl) this.creditFloatEl.textContent = this.state.bank;
       if (this.betEl) this.betEl.textContent = this.state.bet;
       if (this.betDisplayEl) this.betDisplayEl.textContent = this.state.bet;
       if (meta) {

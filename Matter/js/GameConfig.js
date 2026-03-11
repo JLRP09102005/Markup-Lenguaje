@@ -26,11 +26,11 @@ export class GameConfig {
     this.survivalScoreMultiplierStep = -0.05;
     this.survivalScoreMultiplierMin = 0.7;
     this.survivalScoreMultiplierMax = 1.5;
-    this.survivalPayoutBaseLow = 0.85;
-    this.survivalPayoutBaseHigh = 0.35;
-    this.survivalPayoutStepLow = 0.12;
-    this.survivalPayoutStepHigh = 0.32;
-    this.survivalPayoutBetScale = 1000;
+    this.survivalPayoutBaseLow = 0.6;
+    this.survivalPayoutBaseHigh = 0.25;
+    this.survivalPayoutStepLow = 0.08;
+    this.survivalPayoutStepHigh = 0.2;
+    this.survivalPayoutBetScale = 1500;
     this.timerDuration = 60;
   }
 }
