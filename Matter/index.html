@@ -21,9 +21,7 @@
         </div>
         <div class="marquee">WIN UP TO 5000X · PACHINKO ELITE</div>
         <div class="top-stats">
-          <div class="stat-pill">Puntos: <span data-stat="score">0</span></div>
-          <div class="stat-pill">Bolas: <span data-stat="balls">5</span></div>
-          <div class="stat-pill">Tiempo: <span data-stat="time">-</span></div>
+          <div class="stat-pill">Credito: <span id="credit-top">0</span></div>
         </div>
       </header>
       <aside class="panel side-panel left-panel">
@@ -54,15 +52,6 @@
           <button id="reset" class="secondary">Reiniciar</button>
         </div>
       </aside>
-      <footer class="bottom-bar">
-        <div class="credit">CREDIT: <span id="credit-value">0</span></div>
-        <div class="action">PLACE YOUR BETS!</div>
-        <div class="bet-controls">
-          <button class="menu-btn ghost" id="bet-minus">-</button>
-          <div class="bet-value">BET <span id="bet-value">0</span></div>
-          <button class="menu-btn ghost" id="bet-plus">+</button>
-        </div>
-      </footer>
     </div>
     <div class="menu-overlay" id="menu">
       <div class="menu-float">
@@ -96,6 +85,7 @@
           <span>Apuesta</span>
           <input id="bet-input" type="number" min="25" step="25" value="25" />
         </label>
+        <div class="bet-warning is-hidden" id="bet-warning">Credito insuficiente</div>
         <button class="menu-btn" id="bet-confirm">Jugar</button>
         <button class="menu-btn ghost" id="bet-back">Volver</button>
       </div>

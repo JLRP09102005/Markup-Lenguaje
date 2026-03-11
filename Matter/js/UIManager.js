@@ -18,7 +18,7 @@ export class UIManager {
     this.hudTimeEl = document.getElementById("hud-time");
     this.dropBtn = document.getElementById("drop");
     this.resetBtn = document.getElementById("reset");
-    this.bankEl = document.getElementById("credit-value");
+    this.creditTopEl = document.getElementById("credit-top");
     this.betEl = document.getElementById("bet-value");
     this.betMinusBtn = document.getElementById("bet-minus");
     this.betPlusBtn = document.getElementById("bet-plus");
@@ -73,7 +73,7 @@ export class UIManager {
     this._setStat("score", this.state.score);
     this._setStat("balls", meta && meta.balls ? meta.balls : this.state.ballsLeft);
     this._setStat("last", this.state.lastSlot);
-    if (this.bankEl) this.bankEl.textContent = this.state.bank;
+    if (this.creditTopEl) this.creditTopEl.textContent = this.state.bank;
     if (this.betEl) this.betEl.textContent = this.state.bet;
     if (this.betDisplayEl) this.betDisplayEl.textContent = this.state.bet;
     if (meta) {

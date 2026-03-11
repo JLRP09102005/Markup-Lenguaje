@@ -23,6 +23,7 @@ export class MenuManager {
     this.betBankEl = document.getElementById("bet-bank");
     this.betConfirmBtn = document.getElementById("bet-confirm");
     this.betBackBtn = document.getElementById("bet-back");
+    this.betWarningEl = document.getElementById("bet-warning");
     this.timerSeconds = document.getElementById("timer-seconds");
     this.timerStartBtn = document.getElementById("timer-start");
     this.timerBackBtn = document.getElementById("timer-back");
@@ -99,14 +100,18 @@ export class MenuManager {
       this.openSurvivalBet();
     });
     this.betConfirmBtn.addEventListener("click", async () => {
+      if (this._isBetBlocked()) return;
       await this.audio.playClick();
       await this.audio.startMusic();
       this.menu.classList.add("is-hidden");
-      const bet = parseInt(this.betInput.value, 10);
+      const bet = this._sanitizeBetValue(this.betInput ? this.betInput.value : 0);
       if (this.onModeSelect) {
         this.onModeSelect("survival", { bet: Number.isFinite(bet) ? bet : 0 });
       }
       this.onPlay();
+    });
+    this.betInput.addEventListener("input", () => {
+      this._syncBetPanel();
     });
     this.modeTimerBtn.addEventListener("click", async () => {
       await this.audio.playClick();
@@ -165,10 +170,7 @@ export class MenuManager {
       if (this._pauseOpen) {
         this.menu.classList.add("is-hidden");
         this._pauseOpen = false;
-        return;
       }
-      this.menu.classList.add("is-hidden");
-      this._pauseOpen = false;
     });
   }
 
@@ -303,5 +305,32 @@ export class MenuManager {
       const snapped = Math.round(clamped / step) * step;
       this.betInput.value = String(Math.max(Math.min(snapped, max), Math.min(min, max)));
     }
+    this._setBetWarning(safeBank < minDefault);
+  }
+
+  _sanitizeBetValue(value) {
+    const econ = this.getEconomy ? this.getEconomy() : { bank: 0, bet: 0, min: 0, step: 1 };
+    const safeBank = Number.isFinite(econ.bank) ? econ.bank : 0;
+    const min = Number.isFinite(econ.min) ? econ.min : 0;
+    const step = Number.isFinite(econ.step) ? econ.step : 1;
+    const max = Math.max(safeBank, 0);
+    const raw = parseInt(value, 10);
+    const current = Number.isFinite(raw) ? raw : min;
+    const clamped = Math.max(Math.min(current, max), Math.min(min, max));
+    const snapped = Math.round(clamped / step) * step;
+    return Math.max(Math.min(snapped, max), Math.min(min, max));
+  }
+
+  _isBetBlocked() {
+    const econ = this.getEconomy ? this.getEconomy() : { bank: 0, min: 0 };
+    const min = Number.isFinite(econ.min) ? econ.min : 0;
+    const bank = Number.isFinite(econ.bank) ? econ.bank : 0;
+    return bank < min;
+  }
+
+  _setBetWarning(show) {
+    if (!this.betWarningEl) return;
+    this.betWarningEl.classList.toggle("is-hidden", !show);
+    if (this.betConfirmBtn) this.betConfirmBtn.disabled = show;
   }
 }
