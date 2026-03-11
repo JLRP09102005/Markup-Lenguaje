@@ -222,6 +222,27 @@ export class Game {
     this.Matter.World.add(this.engine.world, clone);
     if (this.audio) this.audio.playPowerUp();
   }
+
+  _shrinkBall(ball) {
+    const minRadius = Math.max(this.config.ballMinRadius, 2);
+    const currentRadius = ball.circleRadius || this.config.ballRadius;
+    if (currentRadius <= minRadius + 0.5) return;
+    const factor = Math.max(this.config.shrinkFactor, 0.2);
+    const targetRadius = Math.max(minRadius, currentRadius * factor);
+    const scale = targetRadius / currentRadius;
+    if (scale >= 1) return;
+    this.Matter.Body.scale(ball, scale, scale);
+    if (this.audio) this.audio.playPowerUp();
+  }
+
+  _applyPowerUp(powerUp, ball) {
+    if (!powerUp || !ball) return;
+    if (powerUp.type === "shrink") {
+      this._shrinkBall(ball);
+    } else {
+      this._duplicateBall(ball);
+    }
+  }
   _bindEvents() {
     this.Matter.Events.on(this.engine, "afterUpdate", () => {
       const ballsToRemove = [];
@@ -257,11 +278,13 @@ export class Game {
         const isPowerUpA = a.label === "powerup";
         const isPowerUpB = b.label === "powerup";
         if (isPowerUpA && this.activeBalls.has(b)) {
-          this._duplicateBall(b);
-          this._collectPowerUp(a);
+          const powerUp = this.powerUps.find((p) => p.body === a);
+          this._applyPowerUp(powerUp, b);
+          this._collectPowerUp(powerUp);
         } else if (isPowerUpB && this.activeBalls.has(a)) {
-          this._duplicateBall(a);
-          this._collectPowerUp(b);
+          const powerUp = this.powerUps.find((p) => p.body === b);
+          this._applyPowerUp(powerUp, a);
+          this._collectPowerUp(powerUp);
         }
         const ball = this.activeBalls.has(a) ? a : this.activeBalls.has(b) ? b : null;
         if (ball && this.audio) {
@@ -406,6 +429,8 @@ export class Game {
       ball: styles.getPropertyValue("--ball").trim(),
       powerup: styles.getPropertyValue("--powerup").trim(),
       powerupStroke: styles.getPropertyValue("--powerup-stroke").trim(),
+      powerupShrink: styles.getPropertyValue("--powerup-shrink").trim(),
+      powerupShrinkStroke: styles.getPropertyValue("--powerup-shrink-stroke").trim(),
     };
   }
 
@@ -425,9 +450,26 @@ export class Game {
     });
     this.powerUps.forEach((powerUp) => {
       if (!powerUp.body) return;
-      powerUp.body.render.fillStyle = colors.powerup;
-      powerUp.body.render.strokeStyle = colors.powerupStroke;
+      if (powerUp.type === "shrink") {
+        powerUp.body.render.fillStyle = colors.powerupShrink || colors.powerup;
+        powerUp.body.render.strokeStyle = colors.powerupShrinkStroke || colors.powerupStroke;
+      } else {
+        powerUp.body.render.fillStyle = colors.powerup;
+        powerUp.body.render.strokeStyle = colors.powerupStroke;
+      }
     });
+  }
+
+  _pickPowerUpType() {
+    const list = this.config.powerUpTypes || [{ id: "double", weight: 1 }];
+    const total = list.reduce((sum, item) => sum + Math.max(item.weight || 0, 0), 0);
+    if (total <= 0) return "double";
+    let roll = Math.random() * total;
+    for (const item of list) {
+      roll -= Math.max(item.weight || 0, 0);
+      if (roll <= 0) return item.id;
+    }
+    return list[0]?.id || "double";
   }
 
   _spawnPowerUps() {
@@ -438,21 +480,29 @@ export class Game {
         : this.config.powerUpMin +
           Math.floor(Math.random() * (this.config.powerUpMax - this.config.powerUpMin + 1));
     for (let i = 0; i < total; i += 1) {
-      const powerUp = new PowerUp(this.Matter, this.engine, this.config, () =>
-        this._getThemeColors()
+      const powerUp = new PowerUp(
+        this.Matter,
+        this.engine,
+        this.config,
+        () => this._getThemeColors(),
+        this._pickPowerUpType()
       );
       powerUp.create();
       this.powerUps.push(powerUp);
     }
   }
 
-  _collectPowerUp(body) {
-    const target = this.powerUps.find((p) => p.body === body);
+  _collectPowerUp(target) {
+    if (!target) return;
     if (target) {
       target.collect();
       if (this.mode === "timer") {
-        const powerUp = new PowerUp(this.Matter, this.engine, this.config, () =>
-          this._getThemeColors()
+        const powerUp = new PowerUp(
+          this.Matter,
+          this.engine,
+          this.config,
+          () => this._getThemeColors(),
+          this._pickPowerUpType()
         );
         powerUp.create();
         this.powerUps.push(powerUp);

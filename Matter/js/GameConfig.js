@@ -14,6 +14,12 @@ export class GameConfig {
     this.powerUpRadius = 14;
     this.powerUpMin = 3;
     this.powerUpMax = 5;
+    this.powerUpTypes = [
+      { id: "double", weight: 1 },
+      { id: "shrink", weight: 1 },
+    ];
+    this.shrinkFactor = 0.7;
+    this.ballMinRadius = 6;
     this.bankStart = 1500;
     this.betMin = 25;
     this.betStep = 25;

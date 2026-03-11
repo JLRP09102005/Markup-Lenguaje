@@ -673,6 +673,12 @@
       this.powerUpRadius = 14;
       this.powerUpMin = 3;
       this.powerUpMax = 5;
+      this.powerUpTypes = [
+        { id: "double", weight: 1 },
+        { id: "shrink", weight: 1 },
+      ];
+      this.shrinkFactor = 0.7;
+      this.ballMinRadius = 6;
       this.bankStart = 1500;
       this.betMin = 25;
       this.betStep = 25;
@@ -1008,10 +1014,11 @@
   }
 
   class PowerUp {
-    constructor(engine, config, getColors) {
+    constructor(engine, config, getColors, type = "double") {
       this.engine = engine;
       this.config = config;
       this.getColors = getColors;
+      this.type = type;
       this.body = null;
       this.collected = false;
     }
@@ -1025,12 +1032,15 @@
       const x = minX + Math.random() * (maxX - minX);
       const y = minY + Math.random() * (maxY - minY);
       const colors = this.getColors ? this.getColors() : {};
+      const isShrink = this.type === "shrink";
+      const fill = isShrink ? colors.powerupShrink : colors.powerup;
+      const stroke = isShrink ? colors.powerupShrinkStroke : colors.powerupStroke;
       this.body = Bodies.circle(x, y, radius, {
         isSensor: true,
         isStatic: true,
         render: {
-          fillStyle: colors.powerup || "#00f0ff",
-          strokeStyle: colors.powerupStroke || "#ff4bd8",
+          fillStyle: fill || "#00f0ff",
+          strokeStyle: stroke || "#ff4bd8",
           lineWidth: 2,
         },
       });
@@ -1251,6 +1261,27 @@
       World.add(this.engine.world, clone);
       if (this.audio) this.audio.playPowerUp();
     }
+
+    _shrinkBall(ball) {
+      const minRadius = Math.max(this.config.ballMinRadius, 2);
+      const currentRadius = ball.circleRadius || this.config.ballRadius;
+      if (currentRadius <= minRadius + 0.5) return;
+      const factor = Math.max(this.config.shrinkFactor, 0.2);
+      const targetRadius = Math.max(minRadius, currentRadius * factor);
+      const scale = targetRadius / currentRadius;
+      if (scale >= 1) return;
+      Body.scale(ball, scale, scale);
+      if (this.audio) this.audio.playPowerUp();
+    }
+
+    _applyPowerUp(powerUp, ball) {
+      if (!powerUp || !ball) return;
+      if (powerUp.type === "shrink") {
+        this._shrinkBall(ball);
+      } else {
+        this._duplicateBall(ball);
+      }
+    }
     _bindEvents() {
       Events.on(this.engine, "afterUpdate", () => {
         const ballsToRemove = [];
@@ -1286,11 +1317,13 @@
           const isPowerUpA = a.label === "powerup";
           const isPowerUpB = b.label === "powerup";
           if (isPowerUpA && this.activeBalls.has(b)) {
-            this._duplicateBall(b);
-            this._collectPowerUp(a);
+            const powerUp = this.powerUps.find((p) => p.body === a);
+            this._applyPowerUp(powerUp, b);
+            this._collectPowerUp(powerUp);
           } else if (isPowerUpB && this.activeBalls.has(a)) {
-            this._duplicateBall(a);
-            this._collectPowerUp(b);
+            const powerUp = this.powerUps.find((p) => p.body === b);
+            this._applyPowerUp(powerUp, a);
+            this._collectPowerUp(powerUp);
           }
           const ball = this.activeBalls.has(a) ? a : this.activeBalls.has(b) ? b : null;
           if (ball && this.audio) {
@@ -1434,6 +1467,8 @@
         ball: styles.getPropertyValue("--ball").trim(),
         powerup: styles.getPropertyValue("--powerup").trim(),
         powerupStroke: styles.getPropertyValue("--powerup-stroke").trim(),
+        powerupShrink: styles.getPropertyValue("--powerup-shrink").trim(),
+        powerupShrinkStroke: styles.getPropertyValue("--powerup-shrink-stroke").trim(),
       };
     }
 
@@ -1453,9 +1488,26 @@
       });
       this.powerUps.forEach((powerUp) => {
         if (!powerUp.body) return;
-        powerUp.body.render.fillStyle = colors.powerup;
-        powerUp.body.render.strokeStyle = colors.powerupStroke;
+        if (powerUp.type === "shrink") {
+          powerUp.body.render.fillStyle = colors.powerupShrink || colors.powerup;
+          powerUp.body.render.strokeStyle = colors.powerupShrinkStroke || colors.powerupStroke;
+        } else {
+          powerUp.body.render.fillStyle = colors.powerup;
+          powerUp.body.render.strokeStyle = colors.powerupStroke;
+        }
       });
+    }
+
+    _pickPowerUpType() {
+      const list = this.config.powerUpTypes || [{ id: "double", weight: 1 }];
+      const total = list.reduce((sum, item) => sum + Math.max(item.weight || 0, 0), 0);
+      if (total <= 0) return "double";
+      let roll = Math.random() * total;
+      for (const item of list) {
+        roll -= Math.max(item.weight || 0, 0);
+        if (roll <= 0) return item.id;
+      }
+      return (list[0] && list[0].id) || "double";
     }
 
     _spawnPowerUps() {
@@ -1466,22 +1518,30 @@
           : this.config.powerUpMin +
             Math.floor(Math.random() * (this.config.powerUpMax - this.config.powerUpMin + 1));
       for (let i = 0; i < total; i += 1) {
-        const powerUp = new PowerUp(this.engine, this.config, () => this._getThemeColors());
+        const powerUp = new PowerUp(
+          this.engine,
+          this.config,
+          () => this._getThemeColors(),
+          this._pickPowerUpType()
+        );
         powerUp.create();
         this.powerUps.push(powerUp);
       }
     }
 
-    _collectPowerUp(body) {
-      const target = this.powerUps.find((p) => p.body === body);
-      if (target) {
-        target.collect();
-        if (this.mode === "timer") {
-          const powerUp = new PowerUp(this.engine, this.config, () => this._getThemeColors());
-          powerUp.create();
-          this.powerUps.push(powerUp);
-          this.applyTheme();
-        }
+    _collectPowerUp(target) {
+      if (!target) return;
+      target.collect();
+      if (this.mode === "timer") {
+        const powerUp = new PowerUp(
+          this.engine,
+          this.config,
+          () => this._getThemeColors(),
+          this._pickPowerUpType()
+        );
+        powerUp.create();
+        this.powerUps.push(powerUp);
+        this.applyTheme();
       }
     }
   }

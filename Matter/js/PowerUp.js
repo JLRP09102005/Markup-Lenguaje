@@ -1,9 +1,10 @@
 export class PowerUp {
-  constructor(matter, engine, config, getColors) {
+  constructor(matter, engine, config, getColors, type = "double") {
     this.Matter = matter;
     this.engine = engine;
     this.config = config;
     this.getColors = getColors;
+    this.type = type;
     this.body = null;
     this.collected = false;
   }
@@ -11,6 +12,9 @@ export class PowerUp {
     const { Bodies, World } = this.Matter;
     const radius = this.config.powerUpRadius;
     const colors = this.getColors ? this.getColors() : {};
+    const isShrink = this.type === "shrink";
+    const fill = isShrink ? colors.powerupShrink : colors.powerup;
+    const stroke = isShrink ? colors.powerupShrinkStroke : colors.powerupStroke;
     const minX = radius + 30;
     const maxX = this.config.width - radius - 30;
     const minY = 170;
@@ -22,8 +26,8 @@ export class PowerUp {
       isSensor: true,
       isStatic: true,
       render: {
-        fillStyle: colors.powerup || "#00f0ff",
-        strokeStyle: colors.powerupStroke || "#ff4bd8",
+        fillStyle: fill || "#00f0ff",
+        strokeStyle: stroke || "#ff4bd8",
         lineWidth: 2,
       },
     });

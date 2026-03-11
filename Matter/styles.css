@@ -11,6 +11,8 @@
   --ball: #ff4bd8;
   --powerup: #00f0ff;
   --powerup-stroke: #ff4bd8;
+  --powerup-shrink: #ffb800;
+  --powerup-shrink-stroke: #ff5a36;
   --panel: rgba(16, 21, 39, 0.88);
   --panel-border: rgba(0, 240, 255, 0.25);
   --panel-shadow: 0 0 40px rgba(0, 240, 255, 0.12);
@@ -599,6 +601,8 @@ body.theme-emerald {
   --ball: #00d1ff;
   --powerup: #4dff9a;
   --powerup-stroke: #00d1ff;
+  --powerup-shrink: #00d1ff;
+  --powerup-shrink-stroke: #4dff9a;
   --panel: rgba(10, 20, 18, 0.9);
   --panel-border: rgba(77, 255, 154, 0.35);
   --panel-shadow: 0 0 40px rgba(77, 255, 154, 0.12);
@@ -650,6 +654,8 @@ body.theme-solar {
   --ball: #ff5a36;
   --powerup: #ffb800;
   --powerup-stroke: #ff5a36;
+  --powerup-shrink: #ff5a36;
+  --powerup-shrink-stroke: #ffb800;
   --panel: rgba(26, 16, 12, 0.9);
   --panel-border: rgba(255, 184, 0, 0.35);
   --panel-shadow: 0 0 40px rgba(255, 184, 0, 0.12);
@@ -701,6 +707,8 @@ body.theme-violet {
   --ball: #ff7bd2;
   --powerup: #9b7dff;
   --powerup-stroke: #ff7bd2;
+  --powerup-shrink: #ff7bd2;
+  --powerup-shrink-stroke: #9b7dff;
   --panel: rgba(18, 14, 36, 0.9);
   --panel-border: rgba(155, 125, 255, 0.35);
   --panel-shadow: 0 0 40px rgba(155, 125, 255, 0.12);
@@ -752,6 +760,8 @@ body.theme-noir {
   --ball: #8a8a8a;
   --powerup: #d4d4d4;
   --powerup-stroke: #8a8a8a;
+  --powerup-shrink: #8a8a8a;
+  --powerup-shrink-stroke: #d4d4d4;
   --panel: rgba(10, 10, 12, 0.9);
   --panel-border: rgba(212, 212, 212, 0.25);
   --panel-shadow: 0 0 40px rgba(212, 212, 212, 0.08);
