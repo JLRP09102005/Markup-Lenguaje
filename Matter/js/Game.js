@@ -56,6 +56,7 @@ export class Game {
     this._timerEnded = false;
     this.onSurvivalEnd = null;
     this._bindEvents();
+    this._loadEconomy();
   }
   setMode(mode, options = {}) {
     this.mode = mode;
@@ -150,6 +151,7 @@ export class Game {
     const minBet = Math.min(this.config.betMin, maxBet);
     const next = this.state.bet + direction * step;
     this.state.bet = Math.max(minBet, Math.min(maxBet, next));
+    this._saveEconomy();
     this.ui.render(this._getMeta());
   }
 
@@ -164,6 +166,7 @@ export class Game {
     if (this.state.bet <= 0) return;
     if (this.state.bank >= this.state.bet) {
       this.state.bank -= this.state.bet;
+      this._saveEconomy();
     } else {
       this.state.bet = 0;
     }
@@ -313,6 +316,30 @@ export class Game {
   _paySurvivalRound() {
     const payout = this._getSurvivalPayout();
     this.state.bank += payout;
+    this._saveEconomy();
+  }
+
+  _saveEconomy() {
+    try {
+      localStorage.setItem(
+        "pachinko_economy",
+        JSON.stringify({ bank: this.state.bank, bet: this.state.bet })
+      );
+    } catch {
+      // ignore
+    }
+  }
+
+  _loadEconomy() {
+    try {
+      const raw = localStorage.getItem("pachinko_economy");
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (Number.isFinite(data.bank)) this.state.bank = data.bank;
+      if (Number.isFinite(data.bet)) this.state.bet = data.bet;
+    } catch {
+      // ignore
+    }
   }
 
   _getSurvivalPayout() {
