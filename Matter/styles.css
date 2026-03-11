@@ -126,6 +126,11 @@ body {
   text-transform: uppercase;
   letter-spacing: 1px;
 }
+.menu-btn.small {
+  padding: 6px 10px;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
 .panel {
   background: var(--panel);
   border: 1px solid var(--panel-border);
@@ -453,6 +458,60 @@ button.secondary {
   display: grid;
   gap: 12px;
   box-shadow: var(--menu-card-glow);
+}
+.payment-card {
+  width: min(520px, 92vw);
+}
+.payment-note {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+}
+.payment-grid {
+  display: grid;
+  gap: 10px;
+}
+.payment-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.payment-field {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.payment-field input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--soft-border);
+  background: var(--opt-bg);
+  color: var(--ink);
+  font-size: 13px;
+}
+.amount-grid {
+  display: grid;
+  grid-auto-flow: column;
+  gap: 8px;
+}
+.payment-actions {
+  display: grid;
+  gap: 8px;
+}
+.payment-error {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(230, 69, 69, 0.12);
+  border: 1px solid rgba(230, 69, 69, 0.4);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #f6b2b2;
+  text-align: center;
 }
 .menu-card h2 {
   margin: 0 0 8px;

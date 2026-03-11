@@ -39,6 +39,7 @@ export class Game {
     );
     this.scoreSystem = new ScoreSystem(this.config, this.state);
     this.ui = new UIManager(this.state, this.audio);
+    this.ui.bindPayments((amount) => this.addCredits(amount));
     this.slotLabels = new SlotLabelManager(
       document.getElementById("slot-labels"),
       this.config,
@@ -172,14 +173,23 @@ export class Game {
     }
   }
 
+  addCredits(amount) {
+    if (!Number.isFinite(amount) || amount <= 0) return;
+    this.state.bank += amount;
+    this._saveEconomy();
+    this.ui.render(this._getMeta());
+  }
+
   _isMenuOpen() {
     const menu = document.getElementById("menu");
     const timerResults = document.getElementById("timer-results");
     const survivalResults = document.getElementById("survival-results");
+    const payment = document.getElementById("payment-modal");
     return (
       (menu && !menu.classList.contains("is-hidden")) ||
       (timerResults && !timerResults.classList.contains("is-hidden")) ||
-      (survivalResults && !survivalResults.classList.contains("is-hidden"))
+      (survivalResults && !survivalResults.classList.contains("is-hidden")) ||
+      (payment && !payment.classList.contains("is-hidden"))
     );
   }
   _spawnScoreFx(slotIndex, points) {

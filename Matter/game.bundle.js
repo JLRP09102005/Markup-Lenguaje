@@ -739,6 +739,14 @@
       this.dropBtn = document.getElementById("drop");
       this.resetBtn = document.getElementById("reset");
       this.creditTopEl = document.getElementById("credit-top");
+      this.paymentOpenBtn = document.getElementById("open-payment");
+      this.paymentOpenMenuBtn = document.getElementById("menu-add-credits");
+      this.paymentModal = document.getElementById("payment-modal");
+      this.paymentCancelBtn = document.getElementById("pay-cancel");
+      this.paymentSubmitBtn = document.getElementById("pay-submit");
+      this.paymentAmountInput = document.getElementById("pay-amount");
+      this.paymentAmountBtns = Array.from(document.querySelectorAll(".amount-btn"));
+      this.paymentErrorEl = document.getElementById("pay-error");
       this.betEl = document.getElementById("bet-value");
       this.betMinusBtn = document.getElementById("bet-minus");
       this.betPlusBtn = document.getElementById("bet-plus");
@@ -776,6 +784,43 @@
         this.betPlusBtn.addEventListener("click", onBetUp);
         this.betPlusBtn.addEventListener("mouseenter", () => {
           if (this.audio) this.audio.playClick();
+        });
+      }
+    }
+    bindPayments(onAddCredits) {
+      if (!this.paymentModal) return;
+      [this.paymentOpenBtn, this.paymentOpenMenuBtn].forEach((btn) => {
+        if (!btn) return;
+        btn.addEventListener("click", () => {
+          if (this.audio) this.audio.playClick();
+          this._showPayment(true);
+        });
+      });
+      if (this.paymentCancelBtn) {
+        this.paymentCancelBtn.addEventListener("click", () => {
+          if (this.audio) this.audio.playClick();
+          this._showPayment(false);
+        });
+      }
+      if (this.paymentAmountBtns.length > 0 && this.paymentAmountInput) {
+        this.paymentAmountBtns.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const add = parseInt(btn.dataset.amount || "0", 10);
+            const current = parseInt(this.paymentAmountInput.value || "0", 10);
+            this.paymentAmountInput.value = String(Math.max(0, current + add));
+          });
+        });
+      }
+      if (this.paymentSubmitBtn) {
+        this.paymentSubmitBtn.addEventListener("click", () => {
+          const amount = this._getPaymentAmount();
+          if (!amount) {
+            this._setPaymentError(true);
+            return;
+          }
+          this._setPaymentError(false);
+          onAddCredits(amount);
+          this._showPayment(false);
         });
       }
     }
@@ -827,6 +872,22 @@
       list.forEach((el) => {
         el.textContent = value;
       });
+    }
+
+    _showPayment(open) {
+      if (!this.paymentModal) return;
+      this.paymentModal.classList.toggle("is-hidden", !open);
+    }
+
+    _getPaymentAmount() {
+      if (!this.paymentAmountInput) return 0;
+      const amount = parseInt(this.paymentAmountInput.value, 10);
+      return Number.isFinite(amount) && amount >= 25 ? amount : 0;
+    }
+
+    _setPaymentError(show) {
+      if (!this.paymentErrorEl) return;
+      this.paymentErrorEl.classList.toggle("is-hidden", !show);
     }
   }
 
@@ -1009,6 +1070,7 @@
       this.ballFactory = new BallFactory(this.config, () => this._getThemeColors());
       this.scoreSystem = new ScoreSystem(this.config, this.state);
       this.ui = new UIManager(this.state, this.audio);
+      this.ui.bindPayments((amount) => this.addCredits(amount));
       this.slotLabels = new SlotLabelManager(
         document.getElementById("slot-labels"),
         this.config,
@@ -1137,6 +1199,13 @@
         this.state.bet = 0;
       }
     }
+
+    addCredits(amount) {
+      if (!Number.isFinite(amount) || amount <= 0) return;
+      this.state.bank += amount;
+      this._saveEconomy();
+      this.ui.render(this._getMeta());
+    }
     _spawnScoreFx(slotIndex, points) {
       const slotWidth = this.config.width / this.config.slotCount;
       const x = slotWidth * slotIndex + slotWidth / 2;
@@ -1157,10 +1226,12 @@
       const menu = document.getElementById("menu");
       const timerResults = document.getElementById("timer-results");
       const survivalResults = document.getElementById("survival-results");
+      const payment = document.getElementById("payment-modal");
       return (
         (menu && !menu.classList.contains("is-hidden")) ||
         (timerResults && !timerResults.classList.contains("is-hidden")) ||
-        (survivalResults && !survivalResults.classList.contains("is-hidden"))
+        (survivalResults && !survivalResults.classList.contains("is-hidden")) ||
+        (payment && !payment.classList.contains("is-hidden"))
       );
     }
     _duplicateBall(ball) {

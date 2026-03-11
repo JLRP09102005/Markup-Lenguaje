@@ -22,6 +22,7 @@
         <div class="marquee">WIN UP TO 5000X · PACHINKO ELITE</div>
         <div class="top-stats">
           <div class="stat-pill">Credito: <span id="credit-top">0</span></div>
+          <button class="menu-btn small" id="open-payment">Añadir creditos</button>
         </div>
       </header>
       <aside class="panel side-panel left-panel">
@@ -63,6 +64,7 @@
       <div class="menu-card" id="menu-main">
         <h2>Menu</h2>
         <button class="menu-btn" id="menu-play">Jugar</button>
+        <button class="menu-btn" id="menu-add-credits">Añadir creditos</button>
         <button class="menu-btn secondary" id="menu-options-btn">Opciones</button>
         <button class="menu-btn ghost" id="menu-exit">Salir</button>
       </div>
@@ -127,6 +129,51 @@
           </select>
         </label>
         <button class="menu-btn secondary" id="menu-back">Volver</button>
+      </div>
+    </div>
+    <div class="menu-overlay is-hidden" id="payment-modal">
+      <div class="menu-card payment-card">
+        <h2>Pasarela de Pago</h2>
+        <div class="payment-note">Simulacion. No se procesan pagos reales.</div>
+        <div class="payment-grid">
+          <label class="payment-field">
+            <span>Nombre en tarjeta</span>
+            <input id="pay-name" type="text" placeholder="Nombre Apellido" />
+          </label>
+          <label class="payment-field">
+            <span>Numero de tarjeta</span>
+            <input id="pay-card" type="text" inputmode="numeric" placeholder="0000 0000 0000 0000" />
+          </label>
+          <div class="payment-row">
+            <label class="payment-field">
+              <span>Expiracion</span>
+              <input id="pay-exp" type="text" inputmode="numeric" placeholder="MM/AA" />
+            </label>
+            <label class="payment-field">
+              <span>CVC</span>
+              <input id="pay-cvc" type="text" inputmode="numeric" placeholder="123" />
+            </label>
+          </div>
+          <label class="payment-field">
+            <span>Email</span>
+            <input id="pay-email" type="email" placeholder="tu@email.com" />
+          </label>
+          <label class="payment-field">
+            <span>Importe</span>
+            <input id="pay-amount" type="number" min="25" step="25" value="100" />
+          </label>
+          <div class="amount-grid">
+            <button class="menu-btn ghost amount-btn" data-amount="25">+25</button>
+            <button class="menu-btn ghost amount-btn" data-amount="50">+50</button>
+            <button class="menu-btn ghost amount-btn" data-amount="100">+100</button>
+            <button class="menu-btn ghost amount-btn" data-amount="250">+250</button>
+          </div>
+        </div>
+        <div class="payment-error is-hidden" id="pay-error">Completa el formulario correctamente</div>
+        <div class="payment-actions">
+          <button class="menu-btn" id="pay-submit">Añadir creditos</button>
+          <button class="menu-btn ghost" id="pay-cancel">Cancelar</button>
+        </div>
       </div>
     </div>
     <div class="menu-overlay is-hidden" id="timer-results">

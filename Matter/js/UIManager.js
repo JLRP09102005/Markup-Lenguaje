@@ -19,6 +19,14 @@ export class UIManager {
     this.dropBtn = document.getElementById("drop");
     this.resetBtn = document.getElementById("reset");
     this.creditTopEl = document.getElementById("credit-top");
+    this.paymentOpenBtn = document.getElementById("open-payment");
+    this.paymentOpenMenuBtn = document.getElementById("menu-add-credits");
+    this.paymentModal = document.getElementById("payment-modal");
+    this.paymentCancelBtn = document.getElementById("pay-cancel");
+    this.paymentSubmitBtn = document.getElementById("pay-submit");
+    this.paymentAmountInput = document.getElementById("pay-amount");
+    this.paymentAmountBtns = Array.from(document.querySelectorAll(".amount-btn"));
+    this.paymentErrorEl = document.getElementById("pay-error");
     this.betEl = document.getElementById("bet-value");
     this.betMinusBtn = document.getElementById("bet-minus");
     this.betPlusBtn = document.getElementById("bet-plus");
@@ -56,6 +64,43 @@ export class UIManager {
       this.betPlusBtn.addEventListener("click", onBetUp);
       this.betPlusBtn.addEventListener("mouseenter", () => {
         if (this.audio) this.audio.playClick();
+      });
+    }
+  }
+  bindPayments(onAddCredits) {
+    if (!this.paymentModal) return;
+    [this.paymentOpenBtn, this.paymentOpenMenuBtn].forEach((btn) => {
+      if (!btn) return;
+      btn.addEventListener("click", () => {
+        if (this.audio) this.audio.playClick();
+        this._showPayment(true);
+      });
+    });
+    if (this.paymentCancelBtn) {
+      this.paymentCancelBtn.addEventListener("click", () => {
+        if (this.audio) this.audio.playClick();
+        this._showPayment(false);
+      });
+    }
+    if (this.paymentAmountBtns.length > 0 && this.paymentAmountInput) {
+      this.paymentAmountBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const add = parseInt(btn.dataset.amount || "0", 10);
+          const current = parseInt(this.paymentAmountInput.value || "0", 10);
+          this.paymentAmountInput.value = String(Math.max(0, current + add));
+        });
+      });
+    }
+    if (this.paymentSubmitBtn) {
+      this.paymentSubmitBtn.addEventListener("click", () => {
+        const amount = this._getPaymentAmount();
+        if (!amount) {
+          this._setPaymentError(true);
+          return;
+        }
+        this._setPaymentError(false);
+        onAddCredits(amount);
+        this._showPayment(false);
       });
     }
   }
@@ -107,5 +152,21 @@ export class UIManager {
     list.forEach((el) => {
       el.textContent = value;
     });
+  }
+
+  _showPayment(open) {
+    if (!this.paymentModal) return;
+    this.paymentModal.classList.toggle("is-hidden", !open);
+  }
+
+  _getPaymentAmount() {
+    if (!this.paymentAmountInput) return 0;
+    const amount = parseInt(this.paymentAmountInput.value, 10);
+    return Number.isFinite(amount) && amount >= 25 ? amount : 0;
+  }
+
+  _setPaymentError(show) {
+    if (!this.paymentErrorEl) return;
+    this.paymentErrorEl.classList.toggle("is-hidden", !show);
   }
 }
