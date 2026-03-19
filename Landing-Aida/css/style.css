@@ -1,0 +1,52 @@
+body
+{
+    margin: 0;
+    padding: 0;    
+}
+
+.hero
+{
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-align: center;
+}
+
+.hero video
+{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    transform: translate(-50%, -50%);
+    object-fit: cover;
+    z-index: -2;
+}
+
+.overlay
+{
+    position: absolute;
+    inset: 0;
+    background-color: rgba(100, 0, 105, 0.7);
+    z-index: -1;
+    mix-blend-mode: luminosity;
+}
+
+.content
+{
+    z-index: 1;
+}
+
+.content h1
+{
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
