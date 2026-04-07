@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NetGuard AI — Deep Packet Security</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg0:        #0e0b1a;
+      --bg1:        #13102
+
+;
+      --bg1:        #13102b;
+      --bg2:        #1a1535;
+      --bg3:        #221d42;
+      --panel:      #1c1830;
+      --border:     rgba(139,92,246,0.25);
+      --border2:    rgba(139,92,246,0.12);
+      --purple:     #8b5cf6;
+      --purple2:    #a78bfa;
+      --purple3:    #c4b5fd;
+      --violet:     #6d28d9;
+      --pink:       #ec4899;
+      --cyan:       #22d3ee;
+      --green:      #4ade80;
+      --yellow:     #facc15;
+      --red:        #f87171;
+      --orange:     #fb923c;
+      --text:       #e2e0f0;
+      --muted:      #7c7a9a;
+      --mono:       'JetBrains Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg0);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* ── SCANLINE overlay ── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0,0,0,0.03) 0px,
+        rgba(0,0,0,0.03) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+    }
+
+    canvas#bg { position:fixed; inset:0; z-index:0; pointer-events:none; }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      inset: 0 0 auto 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      padding: .75rem 2rem;
+      background: rgba(14,11,26,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      font-family: var(--mono);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--purple2);
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .logo-shark { font-size: 1.3rem; }
+    nav .spacer { flex: 1; }
+    nav ul { list-style:none; display:flex; gap:2rem; }
+    nav ul a {
+      font-size: .8rem;
+      font-family: var(--mono);
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .2s;
+    }
+    nav ul a:hover { color: var(--purple2); }
+    .nav-status {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      font-size: .75rem;
+      font-family: var(--mono);
+      color: var(--green);
+    }
+    .nav-status::before {
+      content: '';
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: blink 1.2s step-end infinite;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: 6rem 3rem 3rem;
+      gap: 4rem;
+      max-width: 1300px;
+      margin: 0 auto;
+      flex-wrap: wrap;
+    }
+    .hero-left { flex: 1; min-width: 300px; }
+    .hero-right { flex: 1; min-width: 320px; }
+
+    .ws-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      font-family: var(--mono);
+      font-size: .75rem;
+      color: var(--purple3);
+      background: rgba(139,92,246,0.1);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: .3rem .8rem;
+      margin-bottom: 1.5rem;
+    }
+
+    h1 {
+      font-size: clamp(2.2rem, 4.5vw, 4rem);
+      font-weight: 900;
+      line-height: 1.08;
+      letter-spacing: -2px;
+      margin-bottom: 1.2rem;
+    }
+    .grad {
+      background: linear-gradient(135deg, var(--purple2), var(--pink), var(--purple3));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      font-size: 1rem;
+      color: var(--muted);
+      line-height: 1.75;
+      max-width: 480px;
+      margin-bottom: 2rem;
+    }
+    .hero-btns { display:flex; gap:.75rem; flex-wrap:wrap; }
+    .btn-p {
+      background: linear-gradient(135deg, var(--violet), var(--purple));
+      color: #fff;
+      padding: .7rem 1.6rem;
+      border-radius: 6px;
+      font-size: .875rem;
+      font-weight: 700;
+      font-family: var(--mono);
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 0 24px rgba(109,40,217,0.4);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .btn-p:hover { transform:translateY(-2px); box-shadow: 0 0 40px rgba(139,92,246,0.6); }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--purple3);
+      padding: .7rem 1.6rem;
+      border-radius: 6px;
+      font-size: .875rem;
+      font-family: var(--mono);
+      text-decoration: none;
+      transition: background .2s, border-color .2s;
+    }
+    .btn-ghost:hover { background: rgba(139,92,246,0.08); border-color: var(--purple); }
+
+    /* ── PACKET TABLE (hero right) ── */
+    .packet-table-wrap {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 0 60px rgba(139,92,246,0.12);
+      font-family: var(--mono);
+      font-size: .72rem;
+    }
+    .pt-titlebar {
+      background: var(--bg3);
+      padding: .5rem .9rem;
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      border-bottom: 1px solid var(--border2);
+      color: var(--muted);
+      font-size: .7rem;
+    }
+    .pt-dot { width:10px;height:10px;border-radius:50%; }
+    .pt-dot-r{background:#f87171;} .pt-dot-y{background:#facc15;} .pt-dot-g{background:#4ade80;}
+    .pt-titlebar span:last-child { margin-left:auto; color:var(--purple3); }
+
+    /* filter bar */
+    .pt-filter {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .4rem .8rem;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border2);
+    }
+    .pt-filter-label { color: var(--purple); font-size: .68rem; }
+    .pt-filter-input {
+      flex:1;
+      background: var(--bg3);
+      border: 1px solid rgba(139,92,246,0.3);
+      border-radius: 4px;
+      padding: .25rem .6rem;
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: .7rem;
+      outline: none;
+    }
+    .pt-filter-btn {
+      background: var(--violet);
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      padding: .25rem .7rem;
+      font-family: var(--mono);
+      font-size: .68rem;
+      cursor: pointer;
+    }
+
+    /* column headers */
+    .pt-header {
+      display: grid;
+      grid-template-columns: 50px 90px 120px 120px 70px 60px 1fr;
+      padding: .35rem .8rem;
+      background: var(--bg3);
+      color: var(--purple3);
+      font-size: .68rem;
+      border-bottom: 1px solid var(--border2);
+      letter-spacing: .5px;
+    }
+    .pt-rows { max-height: 220px; overflow:hidden; }
+    .pt-row {
+      display: grid;
+      grid-template-columns: 50px 90px 120px 120px 70px 60px 1fr;
+      padding: .3rem .8rem;
+      border-bottom: 1px solid rgba(139,92,246,0.06);
+      transition: background .15s;
+      cursor: default;
+    }
+    .pt-row:hover { background: rgba(139,92,246,0.08); }
+    .pt-row.sel { background: rgba(139,92,246,0.18) !important; border-left: 2px solid var(--purple); }
+    .pt-row.red   { color: #fda4af; background: rgba(248,113,113,0.06); }
+    .pt-row.green { color: #86efac; background: rgba(74,222,128,0.05); }
+    .pt-row.yellow{ color: #fde68a; background: rgba(250,204,21,0.05); }
+    .pt-row.purple{ color: var(--purple3); background: rgba(139,92,246,0.07); }
+    .pt-row.cyan  { color: #67e8f9; background: rgba(34,211,238,0.05); }
+    .pt-row.dim   { color: var(--muted); }
+    .pt-row span { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+
+    /* detail panel */
+    .pt-detail {
+      border-top: 1px solid var(--border2);
+      padding: .6rem .9rem;
+      font-size: .68rem;
+      color: var(--muted);
+      background: var(--bg2);
+      line-height: 1.7;
+    }
+    .pt-detail .k { color: var(--purple3); }
+    .pt-detail .v { color: var(--green); }
+    .pt-detail .warn { color: var(--orange); }
+    .pt-detail .danger { color: var(--red); }
+
+    /* hex dump */
+    .pt-hex {
+      border-top: 1px solid var(--border2);
+      padding: .5rem .9rem;
+      font-size: .65rem;
+      color: var(--muted);
+      background: var(--bg0);
+      line-height: 1.8;
+      font-family: var(--mono);
+    }
+    .pt-hex .hex-offset { color: rgba(139,92,246,0.5); margin-right:.5rem; }
+    .pt-hex .hex-bytes { color: var(--purple3); letter-spacing:1px; margin-right:1rem; }
+    .pt-hex .hex-ascii { color: var(--green); }
+
+    /* ── DIVIDER ── */
+    .section-divider {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      color: var(--border);
+      font-family: var(--mono);
+      font-size: .7rem;
+    }
+    .section-divider::before, .section-divider::after {
+      content: ''; flex:1; height:1px; background: var(--border2);
+    }
+
+    /* ── STATS ROW ── */
+    .stats-row {
+      position: relative; z-index:1;
+      display: flex; justify-content:center; gap:3rem; flex-wrap:wrap;
+      padding: 2.5rem 2rem;
+      max-width:900px; margin:0 auto;
+    }
+    .stat { text-align:center; }
+    .stat-n {
+      font-size: 2rem; font-weight:900; font-family:var(--mono);
+      background: linear-gradient(135deg, var(--purple2), var(--pink));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .stat-l { font-size:.75rem; color:var(--muted); margin-top:.2rem; }
+
+    /* ── SECTION GENERIC ── */
+    .section {
+      position:relative; z-index:1;
+      max-width:1100px; margin:0 auto; padding:5rem 2rem;
+    }
+    .section-head { text-align:center; margin-bottom:3rem; }
+    .chip {
+      display:inline-block;
+      font-family:var(--mono); font-size:.7rem; color:var(--purple3);
+      background:rgba(139,92,246,0.1); border:1px solid var(--border);
+      border-radius:3px; padding:.2rem .7rem; margin-bottom:.75rem;
+    }
+    .section-head h2 {
+      font-size: clamp(1.6rem,3vw,2.4rem);
+      font-weight:800; letter-spacing:-1px;
+    }
+
+    /* ── FEATURES GRID ── */
+    .feat-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(290px,1fr));
+      gap:1px;
+      border:1px solid var(--border2);
+      border-radius:10px;
+      overflow:hidden;
+    }
+    .feat {
+      background:var(--panel);
+      padding:2rem;
+      position:relative;
+      transition:background .2s;
+    }
+    .feat:hover { background:var(--bg3); }
+    .feat-num {
+      font-family:var(--mono); font-size:.7rem; color:var(--purple);
+      margin-bottom:.75rem; letter-spacing:2px;
+    }
+    .feat h3 { font-size:1rem; font-weight:700; margin-bottom:.5rem; }
+    .feat p { font-size:.85rem; color:var(--muted); line-height:1.6; }
+    .feat-icon { font-size:1.8rem; margin-bottom:.75rem; display:block; }
+    .feat::after {
+      content:'';
+      position:absolute; bottom:0; left:0; right:0;
+      height:2px;
+      background:linear-gradient(90deg,transparent,var(--purple),transparent);
+      opacity:0; transition:opacity .3s;
+    }
+    .feat:hover::after { opacity:1; }
+
+    /* ── ARCH FLOW ── */
+    .arch-flow {
+      display:flex; align-items:center; justify-content:center;
+      flex-wrap:wrap; gap:0; margin-top:3rem;
+    }
+    .arch-node {
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:1.2rem 1.5rem;
+      text-align:center; min-width:130px;
+      transition:transform .2s, border-color .2s, box-shadow .2s;
+    }
+    .arch-node:hover {
+      transform:translateY(-3px);
+      border-color:var(--purple);
+      box-shadow:0 0 20px rgba(139,92,246,0.2);
+    }
+    .arch-icon { font-size:1.6rem; display:block; margin-bottom:.4rem; }
+    .arch-name { font-family:var(--mono); font-size:.75rem; color:var(--purple3); font-weight:700; }
+    .arch-sub { font-size:.7rem; color:var(--muted); margin-top:.2rem; }
+    .arch-arrow { color:rgba(139,92,246,0.4); font-size:1.2rem; padding:0 .3rem; }
+
+    /* ── ALERT TABLE (wireshark-style) ── */
+    .alert-table-wrap {
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:8px;
+      overflow:hidden;
+      font-family:var(--mono);
+      font-size:.75rem;
+    }
+    .at-header {
+      display:grid;
+      grid-template-columns:90px 110px 130px 120px 1fr 80px;
+      padding:.4rem 1rem;
+      background:var(--bg3);
+      color:var(--purple3);
+      border-bottom:1px solid var(--border2);
+      font-size:.7rem;
+      letter-spacing:.5px;
+    }
+    .at-row {
+      display:grid;
+      grid-template-columns:90px 110px 130px 120px 1fr 80px;
+      padding:.45rem 1rem;
+      border-bottom:1px solid rgba(139,92,246,0.06);
+      align-items:center;
+      transition:background .15s;
+      cursor:default;
+    }
+    .at-row:hover { background:rgba(139,92,246,0.08); }
+    .at-row.crit  { background:rgba(248,113,113,0.08); color:#fca5a5; }
+    .at-row.high  { background:rgba(251,146,60,0.08);  color:#fdba74; }
+    .at-row.med   { background:rgba(250,204,21,0.07);  color:#fde68a; }
+    .at-row.low   { background:rgba(74,222,128,0.05);  color:#86efac; }
+    .at-row span { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .sev-badge {
+      display:inline-block; padding:.15rem .5rem;
+      border-radius:3px; font-size:.65rem; font-weight:700;
+    }
+    .sev-crit{background:rgba(248,113,113,0.2);color:#f87171;border:1px solid rgba(248,113,113,0.3);}
+    .sev-high{background:rgba(251,146,60,0.2);color:#fb923c;border:1px solid rgba(251,146,60,0.3);}
+    .sev-med{background:rgba(250,204,21,0.15);color:#facc15;border:1px solid rgba(250,204,21,0.3);}
+    .sev-low{background:rgba(74,222,128,0.15);color:#4ade80;border:1px solid rgba(74,222,128,0.3);}
+
+    /* ── STACK PILLS ── */
+    .pills { display:flex; flex-wrap:wrap; gap:.6rem; justify-content:center; }
+    .pill {
+      display:inline-flex; align-items:center; gap:.4rem;
+      background:var(--panel); border:1px solid var(--border2);
+      border-radius:4px; padding:.4rem 1rem;
+      font-family:var(--mono); font-size:.78rem; color:var(--purple3);
+      transition:border-color .2s, background .2s;
+    }
+    .pill:hover { border-color:var(--purple); background:rgba(139,92,246,0.1); }
+
+    /* ── FOOTER ── */
+    footer {
+      position:relative; z-index:1;
+      text-align:center;
+      padding:2.5rem 2rem;
+      border-top:1px solid var(--border2);
+      font-family:var(--mono); font-size:.75rem; color:var(--muted);
+      line-height:2;
+    }
+    footer .accent { color:var(--purple2); }
+
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    .fade-up { animation: fadeUp .7s ease both; }
+    .d1{animation-delay:.1s} .d2{animation-delay:.2s} .d3{animation-delay:.3s} .d4{animation-delay:.4s}
+  
+    /* ── VIDEO DEMO SECTION ── */
+    .video-demo-section {
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+      min-height: 90vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .video-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.35;
+      filter: blur(3px) saturate(1.4) hue-rotate(240deg);
+      z-index: 0;
+    }
+    .video-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        rgba(14,11,26,0.92) 0%,
+        rgba(14,11,26,0.55) 30%,
+        rgba(14,11,26,0.55) 70%,
+        rgba(14,11,26,0.95) 100%
+      );
+      z-index: 1;
+    }
+    .video-grid-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background-image:
+        linear-gradient(rgba(139,92,246,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(139,92,246,0.06) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+    .video-content {
+      position: relative;
+      z-index: 2;
+      max-width: 1100px;
+      width: 100%;
+      padding: 5rem 3rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: center;
+    }
+    @media(max-width:768px){ .video-content{ grid-template-columns:1fr; gap:2rem; } }
+
+    .video-left {}
+    .video-label {
+      font-family: var(--mono);
+      font-size: .7rem;
+      color: var(--purple3);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: .75rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .video-label::before {
+      content: '';
+      width: 24px; height: 1px;
+      background: var(--purple);
+    }
+    .video-left h2 {
+      font-size: clamp(1.8rem, 3vw, 2.8rem);
+      font-weight: 900;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+      margin-bottom: 1rem;
+    }
+    .video-left p {
+      color: var(--muted);
+      font-size: .95rem;
+      line-height: 1.75;
+      margin-bottom: 2rem;
+    }
+    .ui-callouts { display: flex; flex-direction: column; gap: .75rem; }
+    .callout {
+      display: flex;
+      align-items: flex-start;
+      gap: .9rem;
+      background: rgba(139,92,246,0.07);
+      border: 1px solid rgba(139,92,246,0.2);
+      border-radius: 8px;
+      padding: .9rem 1.1rem;
+      transition: background .2s, border-color .2s, transform .2s;
+      cursor: default;
+    }
+    .callout:hover {
+      background: rgba(139,92,246,0.14);
+      border-color: var(--purple);
+      transform: translateX(4px);
+    }
+    .callout-num {
+      font-family: var(--mono);
+      font-size: .7rem;
+      color: var(--purple);
+      background: rgba(139,92,246,0.15);
+      border: 1px solid rgba(139,92,246,0.3);
+      border-radius: 4px;
+      padding: .2rem .5rem;
+      white-space: nowrap;
+      margin-top: .1rem;
+    }
+    .callout-text h4 { font-size: .9rem; font-weight: 700; margin-bottom: .2rem; }
+    .callout-text p { font-size: .8rem; color: var(--muted); line-height: 1.5; }
+
+    /* right: fake UI screenshot */
+    .video-right { position: relative; }
+    .fake-ui {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 80px rgba(139,92,246,0.2), 0 30px 60px rgba(0,0,0,0.5);
+    }
+    .fake-ui-bar {
+      background: var(--bg3);
+      padding: .6rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      border-bottom: 1px solid var(--border2);
+      font-family: var(--mono);
+      font-size: .7rem;
+      color: var(--muted);
+    }
+    .fake-ui-bar .fub-dot { width:9px;height:9px;border-radius:50%; }
+    .fub-r{background:#f87171;} .fub-y{background:#facc15;} .fub-g{background:#4ade80;}
+    .fake-ui-bar .fub-title { margin-left:.5rem; color: var(--purple3); }
+    .fake-ui-bar .fub-live {
+      margin-left:auto;
+      color: var(--green);
+      display:flex; align-items:center; gap:.3rem;
+    }
+    .fake-ui-bar .fub-live::before {
+      content:''; width:6px;height:6px;border-radius:50%;
+      background:var(--green); box-shadow:0 0 6px var(--green);
+      animation: blink 1s step-end infinite;
+    }
+    .fake-ui-body { padding: 1rem; font-family: var(--mono); font-size: .72rem; }
+
+    /* mini chart bars */
+    .mini-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 60px;
+      margin-bottom: 1rem;
+      padding: .5rem;
+      background: var(--bg2);
+      border-radius: 6px;
+      border: 1px solid var(--border2);
+    }
+    .bar {
+      flex: 1;
+      border-radius: 2px 2px 0 0;
+      background: linear-gradient(180deg, var(--purple2), var(--violet));
+      opacity: .7;
+      transition: opacity .2s;
+      animation: barGrow .8s ease both;
+    }
+    .bar.alert { background: linear-gradient(180deg, #f87171, #be123c); opacity: .9; }
+    .bar.warn  { background: linear-gradient(180deg, #facc15, #b45309); opacity: .8; }
+    @keyframes barGrow { from{transform:scaleY(0);transform-origin:bottom} to{transform:scaleY(1)} }
+
+    .fake-stats {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: .5rem; margin-bottom: 1rem;
+    }
+    .fake-stat {
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      padding: .5rem .6rem;
+      text-align: center;
+    }
+    .fake-stat .fsn { font-size: 1rem; font-weight: 800; color: var(--purple2); }
+    .fake-stat .fsl { font-size: .6rem; color: var(--muted); margin-top: .1rem; }
+
+    .fake-log { display: flex; flex-direction: column; gap: .3rem; }
+    .flog-row {
+      display: flex; gap: .5rem; align-items: center;
+      padding: .3rem .5rem;
+      border-radius: 4px;
+      border-left: 2px solid transparent;
+    }
+    .flog-row.fc { background: rgba(248,113,113,0.08); border-color: #f87171; color: #fca5a5; }
+    .flog-row.fh { background: rgba(251,146,60,0.07);  border-color: #fb923c; color: #fdba74; }
+    .flog-row.fm { background: rgba(250,204,21,0.06);  border-color: #facc15; color: #fde68a; }
+    .flog-row.fo { background: rgba(74,222,128,0.05);  border-color: #4ade80; color: #86efac; }
+    .flog-time { opacity: .5; white-space: nowrap; font-size: .65rem; }
+    .flog-msg  { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .7rem; }
+
+    /* animated scan line over video */
+    .scan-line {
+      position: absolute;
+      left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--purple), var(--pink), transparent);
+      z-index: 3;
+      animation: scanMove 4s linear infinite;
+      opacity: .5;
+    }
+    @keyframes scanMove {
+      0%  { top: 0%; }
+      100%{ top: 100%; }
+    }
+
+  </style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+
+<!-- NAV -->
+<nav>
+  <div class="logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="42" height="50" style="display:inline-block;vertical-align:middle;filter:drop-shadow(0 0 6px #8b5cf6)">
+  <defs>
+    <linearGradient id="spg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a78bfa"/>
+      <stop offset="100%" style="stop-color:#6d28d9"/>
+    </linearGradient>
+  </defs>
+  <polygon points="50,38 20,5 28,18 44,36" fill="url(#spg)"/>
+  <polygon points="50,38 80,5 72,18 56,36" fill="url(#spg)"/>
+  <polygon points="44,55 5,42 18,50 42,58" fill="url(#spg)"/>
+  <polygon points="56,55 95,42 82,50 58,58" fill="url(#spg)"/>
+  <polygon points="46,72 12,100 22,88 44,74" fill="url(#spg)"/>
+  <polygon points="54,72 88,100 78,88 56,74" fill="url(#spg)"/>
+  <polygon points="50,20 38,38 50,48 62,38" fill="url(#spg)"/>
+  <polygon points="38,50 44,72 50,80 56,72 62,50 50,44" fill="url(#spg)"/>
+  <polygon points="44,44 50,50 56,44 50,38" fill="#c4b5fd"/>
+  <polygon points="44,56 50,50 56,56 50,62" fill="#c4b5fd"/>
+</svg> <span style="margin-left:.4rem;">NetGuard AI</span></div>
+  <div class="spacer"></div>
+  <ul>
+    <li><a href="#features">Módulos</a></li>
+    <li><a href="#arch">Arquitectura</a></li>
+    <li><a href="#alerts">Alertas</a></li>
+    <li><a href="#stack">Stack</a></li>
+  </ul>
+  <div class="nav-status">CAPTURING — eth0</div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left fade-up">
+    <div class="ws-badge"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="16" height="20" style="display:inline-block;vertical-align:middle;filter:drop-shadow(0 0 4px #8b5cf6)">
+  <defs>
+    <linearGradient id="spg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a78bfa"/>
+      <stop offset="100%" style="stop-color:#6d28d9"/>
+    </linearGradient>
+  </defs>
+  <polygon points="50,38 20,5 28,18 44,36" fill="url(#spg)"/>
+  <polygon points="50,38 80,5 72,18 56,36" fill="url(#spg)"/>
+  <polygon points="44,55 5,42 18,50 42,58" fill="url(#spg)"/>
+  <polygon points="56,55 95,42 82,50 58,58" fill="url(#spg)"/>
+  <polygon points="46,72 12,100 22,88 44,74" fill="url(#spg)"/>
+  <polygon points="54,72 88,100 78,88 56,74" fill="url(#spg)"/>
+  <polygon points="50,20 38,38 50,48 62,38" fill="url(#spg)"/>
+  <polygon points="38,50 44,72 50,80 56,72 62,50 50,44" fill="url(#spg)"/>
+  <polygon points="44,44 50,50 56,44 50,38" fill="#c4b5fd"/>
+  <polygon points="44,56 50,50 56,56 50,62" fill="#c4b5fd"/>
+</svg> netguard-ai v1.0 · CICIDS2017 model loaded</div>
+    <div style="margin-bottom:1.2rem;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="110" height="132" style="display:inline-block;vertical-align:middle;filter:drop-shadow(0 0 18px #8b5cf6)">
+  <defs>
+    <linearGradient id="spg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a78bfa"/>
+      <stop offset="100%" style="stop-color:#6d28d9"/>
+    </linearGradient>
+  </defs>
+  <polygon points="50,38 20,5 28,18 44,36" fill="url(#spg)"/>
+  <polygon points="50,38 80,5 72,18 56,36" fill="url(#spg)"/>
+  <polygon points="44,55 5,42 18,50 42,58" fill="url(#spg)"/>
+  <polygon points="56,55 95,42 82,50 58,58" fill="url(#spg)"/>
+  <polygon points="46,72 12,100 22,88 44,74" fill="url(#spg)"/>
+  <polygon points="54,72 88,100 78,88 56,74" fill="url(#spg)"/>
+  <polygon points="50,20 38,38 50,48 62,38" fill="url(#spg)"/>
+  <polygon points="38,50 44,72 50,80 56,72 62,50 50,44" fill="url(#spg)"/>
+  <polygon points="44,44 50,50 56,44 50,38" fill="#c4b5fd"/>
+  <polygon points="44,56 50,50 56,56 50,62" fill="#c4b5fd"/>
+</svg></div>
+    <h1>Network Security<br><span class="grad">Deep Analysis</span></h1>
+    <p>Captura, analiza y correlaciona tráfico de red con inteligencia artificial. Detecta port scans, brute force, DoS y comportamientos anómalos antes de que causen daño.</p>
+    <div class="hero-btns">
+      <a href="#alerts" class="btn-p">▶ Start Capture</a>
+      <a href="#arch" class="btn-ghost">View Docs →</a>
+    </div>
+  </div>
+  <div class="hero-right fade-up d2">
+    <div class="packet-table-wrap">
+      <div class="pt-titlebar">
+        <div class="pt-dot pt-dot-r"></div>
+        <div class="pt-dot pt-dot-y"></div>
+        <div class="pt-dot pt-dot-g"></div>
+        netguard · live capture · eth0
+        <span>1,247 packets</span>
+      </div>
+      <div class="pt-filter">
+        <span class="pt-filter-label">Filter:</span>
+        <input class="pt-filter-input" value="tcp && ip.src == 192.168.1.0/24" readonly/>
+        <button class="pt-filter-btn">Apply</button>
+      </div>
+      <div class="pt-header">
+        <span>No.</span><span>Time</span><span>Source</span><span>Destination</span>
+        <span>Proto</span><span>Len</span><span>Info</span>
+      </div>
+      <div class="pt-rows" id="packet-rows"></div>
+      <div class="pt-detail">
+        <div><span class="k">▼ Frame 1241:</span> <span class="v">74 bytes on wire</span></div>
+        <div>&nbsp;&nbsp;<span class="k">▼ Internet Protocol Src:</span> <span class="v">192.168.1.47</span> <span class="warn">⚠ anomaly_score: 0.94</span></div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">▼ TCP Dst Port:</span> <span class="danger">443 [SYN SCAN DETECTED]</span></div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">AI Classification:</span> <span class="danger">PORT_SCAN · confidence: 97.3%</span></div>
+      </div>
+      <div class="pt-hex">
+        <div><span class="hex-offset">0000</span><span class="hex-bytes">45 00 00 3c 1c 46 40 00  40 06 a6 ec c0 a8 01 2f</span><span class="hex-ascii">E..&lt;.F@.@.....</span></div>
+        <div><span class="hex-offset">0010</span><span class="hex-bytes">c0 a8 01 01 c4 d2 01 bb  00 00 00 00 00 00 00 00</span><span class="hex-ascii">................</span></div>
+        <div><span class="hex-offset">0020</span><span class="hex-bytes">a0 02 fa f0 e4 8e 00 00  02 04 05 b4 04 02 08 0a</span><span class="hex-ascii">................</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-row">
+  <div class="stat"><div class="stat-n">99.3%</div><div class="stat-l">Precisión detección</div></div>
+  <div class="stat"><div class="stat-n">&lt;12ms</div><div class="stat-l">Latencia análisis</div></div>
+  <div class="stat"><div class="stat-n">254</div><div class="stat-l">Hosts monitorizados</div></div>
+  <div class="stat"><div class="stat-n">5</div><div class="stat-l">Tipos de ataque</div></div>
+</div>
+
+<div class="section-divider">── 0x02 · MÓDULOS ──</div>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="section-head">
+    <div class="chip">// módulos del sistema</div>
+    <h2>Capacidades del sistema</h2>
+  </div>
+  <div class="feat-grid">
+    <div class="feat">
+      <span class="feat-icon">📡</span>
+      <div class="feat-num">01.</div>
+      <h3>Captura de Paquetes</h3>
+      <p>Integración con nmap via PHP exec(). Descubrimiento de hosts, puertos abiertos y fingerprinting de servicios en la red local.</p>
+    </div>
+    <div class="feat">
+      <span class="feat-icon">🧠</span>
+      <div class="feat-num">02.</div>
+      <h3>Motor IA — Isolation Forest</h3>
+      <p>Modelo entrenado con CICIDS2017. Detecta anomalías sin firmas: DoS, Port Scan, Brute Force, Infiltration y Botnet.</p>
+    </div>
+    <div class="feat">
+      <span class="feat-icon">🔬</span>
+      <div class="feat-num">03.</div>
+      <h3>Deep Packet Inspection</h3>
+      <p>Análisis de cabeceras TCP/UDP/ICMP. Extracción de features para el modelo: packet length, flag ratios, inter-arrival time.</p>
+    </div>
+    <div class="feat">
+      <span class="feat-icon">⚡</span>
+      <div class="feat-num">04.</div>
+      <h3>Alertas en Tiempo Real</h3>
+      <p>Dashboard PHP con polling cada 3s. Clasificación por severidad crítica, alta, media e informativa con timestamps exactos.</p>
+    </div>
+    <div class="feat">
+      <span class="feat-icon">🛡️</span>
+      <div class="feat-num">05.</div>
+      <h3>Respuesta Asistida</h3>
+      <p>El modelo sugiere reglas iptables y fail2ban. El administrador aprueba con un click antes de aplicar el cambio al sistema.</p>
+    </div>
+    <div class="feat">
+      <span class="feat-icon">📊</span>
+      <div class="feat-num">06.</div>
+      <h3>Visualización & Auditoría</h3>
+      <p>Gráficas Chart.js de tráfico histórico y picos anómalos. Log forense persistente en SQLite de todos los eventos.</p>
+    </div>
+  </div>
+</section>
+
+
+<div class="section-divider">── 0x03.5 · DEMO UI ──</div>
+
+<section class="video-demo-section" id="demo-ui">
+  <!-- blurred network traffic video from public domain source -->
+  <video class="video-bg" autoplay muted loop playsinline>
+    <source src="video/show-template.mp4" type="video/mp4"/>
+    <!-- fallback: animated canvas already in bg -->
+  </video>
+  <div class="video-overlay"></div>
+  <div class="video-grid-overlay"></div>
+  <div class="scan-line"></div>
+
+  <div class="video-content">
+    <!-- LEFT: callouts -->
+    <div class="video-left">
+      <div class="video-label">// interfaz en acción</div>
+      <h2>Dashboard diseñado para <span class="grad">analistas</span></h2>
+      <p>Cada elemento de la interfaz está pensado para reducir el tiempo de respuesta ante amenazas. Información crítica al frente, ruido eliminado.</p>
+      <div class="ui-callouts">
+        <div class="callout">
+          <span class="callout-num">UI·01</span>
+          <div class="callout-text">
+            <h4>Tabla de paquetes en tiempo real</h4>
+            <p>Filas coloreadas por severidad al estilo Wireshark. Cada paquete anómalo es marcado al instante con su anomaly score.</p>
+          </div>
+        </div>
+        <div class="callout">
+          <span class="callout-num">UI·02</span>
+          <div class="callout-text">
+            <h4>Panel de métricas vivas</h4>
+            <p>Contador de hosts activos, paquetes analizados y alertas pendientes actualizado cada 3 segundos via polling PHP.</p>
+          </div>
+        </div>
+        <div class="callout">
+          <span class="callout-num">UI·03</span>
+          <div class="callout-text">
+            <h4>Gráfica de tráfico histórico</h4>
+            <p>Barras Chart.js que muestran volumen de paquetes por minuto. Los picos anómalos se destacan en rojo automáticamente.</p>
+          </div>
+        </div>
+        <div class="callout">
+          <span class="callout-num">UI·04</span>
+          <div class="callout-text">
+            <h4>Log de alertas con acción 1-click</h4>
+            <p>Cada alerta incluye botones de "Bloquear IP" y "Ignorar". La acción se envía via API Flask al sistema iptables local.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: fake UI mockup -->
+    <div class="video-right">
+      <div class="fake-ui">
+        <div class="fake-ui-bar">
+          <div class="fub-dot fub-r"></div>
+          <div class="fub-dot fub-y"></div>
+          <div class="fub-dot fub-g"></div>
+          <span class="fub-title">NetGuard AI — Dashboard</span>
+          <span class="fub-live">LIVE</span>
+        </div>
+        <div class="fake-ui-body">
+          <!-- stats row -->
+          <div class="fake-stats">
+            <div class="fake-stat"><div class="fsn" id="d-hosts">14</div><div class="fsl">Hosts activos</div></div>
+            <div class="fake-stat"><div class="fsn" id="d-pkts">1,247</div><div class="fsl">Paquetes/min</div></div>
+            <div class="fake-stat"><div class="fsn" id="d-alerts" style="color:#f87171">3</div><div class="fsl">Alertas</div></div>
+          </div>
+          <!-- mini bar chart -->
+          <div class="mini-chart" id="mini-chart"></div>
+          <!-- log -->
+          <div class="fake-log">
+            <div class="flog-row fc"><span class="flog-time">00:02:14</span><span class="flog-msg">⚠ Port Scan — 192.168.1.47 — score 0.94 — [BLOQUEAR] [IGNORAR]</span></div>
+            <div class="flog-row fh"><span class="flog-time">00:04:11</span><span class="flog-msg">⚠ Brute Force SSH — 192.168.1.103 — score 0.87</span></div>
+            <div class="flog-row fm"><span class="flog-time">00:07:33</span><span class="flog-msg">△ ICMP Flood — 10.0.0.5 — score 0.82</span></div>
+            <div class="flog-row fo"><span class="flog-time">00:12:30</span><span class="flog-msg">✓ Scan completo — 254 hosts — sin nuevas amenazas</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider">── 0x04 · ARQUITECTURA ──</div>
+
+<!-- ARCH -->
+<section class="section" id="arch">
+  <div class="section-head">
+    <div class="chip">// pipeline de análisis</div>
+    <h2>Flujo de datos</h2>
+  </div>
+  <div class="arch-flow">
+    <div class="arch-node">
+      <span class="arch-icon">🌐</span>
+      <div class="arch-name">Red Local</div>
+      <div class="arch-sub">192.168.1.0/24</div>
+    </div>
+    <div class="arch-arrow">──▶</div>
+    <div class="arch-node">
+      <span class="arch-icon">📡</span>
+      <div class="arch-name">nmap</div>
+      <div class="arch-sub">Scan & capture</div>
+    </div>
+    <div class="arch-arrow">──▶</div>
+    <div class="arch-node">
+      <span class="arch-icon">🐍</span>
+      <div class="arch-name">Python AI</div>
+      <div class="arch-sub">Isolation Forest</div>
+    </div>
+    <div class="arch-arrow">──▶</div>
+    <div class="arch-node">
+      <span class="arch-icon">🗄️</span>
+      <div class="arch-name">SQLite</div>
+      <div class="arch-sub">Persistencia</div>
+    </div>
+    <div class="arch-arrow">──▶</div>
+    <div class="arch-node">
+      <span class="arch-icon">🖥️</span>
+      <div class="arch-name">PHP + Flask</div>
+      <div class="arch-sub">Dashboard web</div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider">── 0x04 · ALERTAS ──</div>
+
+<!-- ALERTS -->
+<section class="section" id="alerts">
+  <div class="section-head">
+    <div class="chip">// detecciones recientes</div>
+    <h2>Panel de amenazas</h2>
+  </div>
+  <div class="alert-table-wrap">
+    <div class="at-header">
+      <span>TIEMPO</span><span>SRC IP</span><span>TIPO</span>
+      <span>PROTOCOLO</span><span>DESCRIPCIÓN</span><span>SCORE</span>
+    </div>
+    <div class="at-row crit">
+      <span>00:02:14</span><span>192.168.1.47</span>
+      <span><span class="sev-badge sev-crit">CRÍTICO</span></span>
+      <span>TCP/SYN</span><span>Port Scan — 1024 ports in 0.3s</span><span>0.94</span>
+    </div>
+    <div class="at-row high">
+      <span>00:04:11</span><span>192.168.1.103</span>
+      <span><span class="sev-badge sev-high">ALTO</span></span>
+      <span>SSH/TCP</span><span>Brute Force — 847 failed auth/min</span><span>0.87</span>
+    </div>
+    <div class="at-row high">
+      <span>00:07:33</span><span>10.0.0.5</span>
+      <span><span class="sev-badge sev-high">ALTO</span></span>
+      <span>ICMP</span><span>ICMP Flood — 15,000 pkt/s detected</span><span>0.82</span>
+    </div>
+    <div class="at-row med">
+      <span>00:12:30</span><span>192.168.1.22</span>
+      <span><span class="sev-badge sev-med">MEDIO</span></span>
+      <span>DNS/UDP</span><span>Unusual DNS queries — 34 unknown domains</span><span>0.61</span>
+    </div>
+    <div class="at-row low">
+      <span>00:15:00</span><span>192.168.1.0/24</span>
+      <span><span class="sev-badge sev-low">INFO</span></span>
+      <span>—</span><span>Periodic scan complete — 254 hosts, no new threats</span><span>0.12</span>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider">── 0x05 · STACK ──</div>
+
+<!-- STACK -->
+<section class="section" id="stack">
+  <div class="section-head">
+    <div class="chip">// tecnologías utilizadas</div>
+    <h2>Tech Stack</h2>
+  </div>
+  <div class="pills">
+    <div class="pill">🐍 Python 3.11</div>
+    <div class="pill">🤖 scikit-learn</div>
+    <div class="pill">🐘 PHP 8.2</div>
+    <div class="pill">🗄️ SQLite 3</div>
+    <div class="pill">📡 nmap 7.9</div>
+    <div class="pill">📊 Chart.js</div>
+    <div class="pill">🔶 Flask API</div>
+    <div class="pill">🧬 CICIDS2017</div>
+    <div class="pill">🌲 Isolation Forest</div>
+    <div class="pill">🐧 iptables</div>
+    <div class="pill">🔐 fail2ban</div>
+    <div class="pill">📦 JSON REST API</div>
+  </div>
+</section>
+
+<footer>
+  <div><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="14" height="17" style="display:inline-block;vertical-align:middle;filter:drop-shadow(0 0 3px #8b5cf6)">
+  <defs>
+    <linearGradient id="spg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a78bfa"/>
+      <stop offset="100%" style="stop-color:#6d28d9"/>
+    </linearGradient>
+  </defs>
+  <polygon points="50,38 20,5 28,18 44,36" fill="url(#spg)"/>
+  <polygon points="50,38 80,5 72,18 56,36" fill="url(#spg)"/>
+  <polygon points="44,55 5,42 18,50 42,58" fill="url(#spg)"/>
+  <polygon points="56,55 95,42 82,50 58,58" fill="url(#spg)"/>
+  <polygon points="46,72 12,100 22,88 44,74" fill="url(#spg)"/>
+  <polygon points="54,72 88,100 78,88 56,74" fill="url(#spg)"/>
+  <polygon points="50,20 38,38 50,48 62,38" fill="url(#spg)"/>
+  <polygon points="38,50 44,72 50,80 56,72 62,50 50,44" fill="url(#spg)"/>
+  <polygon points="44,44 50,50 56,44 50,38" fill="#c4b5fd"/>
+  <polygon points="44,56 50,50 56,56 50,62" fill="#c4b5fd"/>
+</svg> <span class="accent">NetGuard AI</span> · Proyecto académico individual · 2026</div>
+  <div>Herramienta de seguridad de red con IA · Uso exclusivo en entornos controlados y con autorización explícita</div>
+  <div style="margin-top:.5rem;color:rgba(139,92,246,0.3);">// END OF PACKET STREAM</div>
+</footer>
+
+<script>
+// ── PARTICLE / NETWORK GRAPH BG ──
+const c = document.getElementById('bg');
+const ctx = c.getContext('2d');
+let W, H, nodes=[];
+
+function resize(){ W=c.width=innerWidth; H=c.height=innerHeight; }
+resize(); addEventListener('resize',resize);
+
+class Node {
+  constructor(){
+    this.x=Math.random()*W; this.y=Math.random()*H;
+    this.vx=(Math.random()-.5)*.35; this.vy=(Math.random()-.5)*.35;
+    this.r=Math.random()*1.8+.4;
+    this.hue=Math.random()>0.7?280:260;
+  }
+  update(){
+    this.x+=this.vx; this.y+=this.vy;
+    if(this.x<0||this.x>W)this.vx*=-1;
+    if(this.y<0||this.y>H)this.vy*=-1;
+  }
+}
+for(let i=0;i<90;i++) nodes.push(new Node());
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  for(let i=0;i<nodes.length;i++){
+    nodes[i].update();
+    // connections
+    for(let j=i+1;j<nodes.length;j++){
+      const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      if(d<120){
+        ctx.beginPath();
+        ctx.moveTo(nodes[i].x,nodes[i].y);
+        ctx.lineTo(nodes[j].x,nodes[j].y);
+        ctx.strokeStyle=`rgba(139,92,246,${.15*(1-d/120)})`;
+        ctx.lineWidth=.6;
+        ctx.stroke();
+      }
+    }
+    // node dot
+    ctx.beginPath();
+    ctx.arc(nodes[i].x,nodes[i].y,nodes[i].r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(167,139,250,0.5)`;
+    ctx.fill();
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+
+// ── LIVE PACKET TABLE ──
+const packets = [
+  {cls:'purple sel',no:'1241',time:'00:02.14',src:'192.168.1.47',dst:'192.168.1.1',proto:'TCP',len:'74',info:'SYN SCAN [ANOMALY 0.94]'},
+  {cls:'red',   no:'1240',time:'00:02.11',src:'192.168.1.47',dst:'192.168.1.1',proto:'TCP',len:'74',info:'SYN 443 [ANOMALY]'},
+  {cls:'red',   no:'1239',time:'00:02.09',src:'192.168.1.47',dst:'192.168.1.1',proto:'TCP',len:'74',info:'SYN 80 [ANOMALY]'},
+  {cls:'yellow',no:'1238',time:'00:04.11',src:'192.168.1.103',dst:'192.168.1.1',proto:'SSH', len:'92',info:'AUTH FAIL #847 [BRUTE FORCE]'},
+  {cls:'green', no:'1237',time:'00:05.00',src:'192.168.1.2',dst:'8.8.8.8',     proto:'DNS', len:'67',info:'Standard Query A google.com'},
+  {cls:'cyan',  no:'1236',time:'00:05.01',src:'8.8.8.8',     dst:'192.168.1.2',proto:'DNS', len:'83',info:'Standard Response 142.250.x.x'},
+  {cls:'dim',   no:'1235',time:'00:05.02',src:'192.168.1.15', dst:'192.168.1.1',proto:'ARP', len:'42',info:'Who has 192.168.1.1? Tell 192.168.1.15'},
+];
+
+const rowsEl = document.getElementById('packet-rows');
+packets.forEach((p,i) => {
+  const d = document.createElement('div');
+  d.className = `pt-row ${p.cls}`;
+  d.style.animationDelay = `${i*80}ms`;
+  d.innerHTML = `<span>${p.no}</span><span>${p.time}</span><span>${p.src}</span><span>${p.dst}</span><span>${p.proto}</span><span>${p.len}</span><span>${p.info}</span>`;
+  rowsEl.appendChild(d);
+});
+
+
+// ── MINI CHART ──
+const mc = document.getElementById('mini-chart');
+if(mc){
+  const vals = [22,35,28,45,30,52,38,90,42,35,28,48,33,55,40,72,38,45,30,25,60,44,85,38,42,50,33,28,45,38];
+  const alerts = [7,9,14,23,29]; // indices with alert color
+  vals.forEach((v,i)=>{
+    const b = document.createElement('div');
+    b.className = 'bar' + (alerts.includes(i)?' alert': (v>60?' warn':''));
+    b.style.height = (v/90*100)+'%';
+    b.style.animationDelay = (i*25)+'ms';
+    mc.appendChild(b);
+  });
+}
+// ── LIVE COUNTER ──
+let pkts = 1247;
+setInterval(()=>{
+  pkts += Math.floor(Math.random()*12+3);
+  const el = document.getElementById('d-pkts');
+  if(el) el.textContent = pkts.toLocaleString('es-ES');
+},1100);
+
+// ── NEW PACKET TICKER ──
+let ticker = 1242;
+const protos = ['TCP','UDP','ICMP','DNS','ARP','SSH','HTTP','TLS'];
+const infos = [
+  'SYN ACK — normal flow','Standard DNS query','ARP request','TLS Client Hello',
+  'HTTP GET /index.html','ICMP Echo request','ACK — data transfer','FIN ACK'
+];
+setInterval(()=>{
+  const rows = rowsEl.querySelectorAll('.pt-row');
+  if(rows.length>7) rowsEl.removeChild(rows[rows.length-1]);
+  const d = document.createElement('div');
+  const ok = Math.random()>.3;
+  d.className = `pt-row ${ok?'dim':'yellow'}`;
+  const proto = protos[Math.floor(Math.random()*protos.length)];
+  const info = ok ? infos[Math.floor(Math.random()*infos.length)] : 'ANOMALY DETECTED — score: '+(Math.random()*.3+0.6).toFixed(2);
+  const src = `192.168.1.${Math.floor(Math.random()*50)+2}`;
+  d.innerHTML = `<span>${ticker++}</span><span>${new Date().toISOString().substr(14,8)}</span><span>${src}</span><span>192.168.1.1</span><span>${proto}</span><span>${Math.floor(Math.random()*200+40)}</span><span>${info}</span>`;
+  rowsEl.insertBefore(d,rowsEl.firstChild);
+},900);
+</script>
+</body>
+</html>
